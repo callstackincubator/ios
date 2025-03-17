@@ -1,5 +1,5 @@
 name: 'Post Build'
-description: 'Post Build info'
+description: 'Post build comment for RNEF builds'
 
 inputs:
   artifact-url:
@@ -13,5 +13,11 @@ inputs:
     required: false
     default: ${{ github.token }}
 runs:
-  using: 'node20'
-  main: 'index.js'
+  using: 'composite'
+  steps:
+    - name: Install dependencies
+      run: npm install
+      shell: bash
+    - name: Run post build
+      run: node index.js
+      shell: bash

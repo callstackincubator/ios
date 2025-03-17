@@ -2,7 +2,7 @@
   "name": "rnef-native-fingerprint",
   "version": "1.0.0",
   "description": "Generate native fingerprint for RNEF builds",
-  "main": "index.js",
+  "main": "index.mjs",
   "dependencies": {
     "@actions/core": "^1.11.1"
   }

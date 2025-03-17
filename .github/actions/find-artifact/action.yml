@@ -25,5 +25,11 @@ outputs:
   artifact-ids:
     description: 'All IDs of the artifacts matching the name'
 runs:
-  using: 'node20'
-  main: 'index.js'
+  using: 'composite'
+  steps:
+    - name: Install dependencies
+      run: npm install
+      shell: bash
+    - name: Run find artifact
+      run: node index.js
+      shell: bash

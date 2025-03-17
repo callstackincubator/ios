@@ -12,5 +12,11 @@ outputs:
   hash:
     description: 'The fingerprint hash'
 runs:
-  using: 'node20'
-  main: 'index.mjs'
+  using: 'composite'
+  steps:
+    - name: Install dependencies
+      run: npm install
+      shell: bash
+    - name: Run fingerprint
+      run: node index.mjs
+      shell: bash
