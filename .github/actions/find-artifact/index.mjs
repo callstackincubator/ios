@@ -1,5 +1,5 @@
-const core = require('@actions/core');
-const github = require('@actions/github');
+import * as core from "@actions/core";
+import * as github from "@actions/github";
 
 const perPage = 100; // Maximum allowed by GitHub API
 
@@ -9,8 +9,8 @@ async function fetchArtifacts(octokit, repository, name) {
 
   while (true) {
     const response = await octokit.rest.actions.listArtifactsForRepo({
-      owner: repository.split('/')[0],
-      repo: repository.split('/')[1],
+      owner: repository.split("/")[0],
+      repo: repository.split("/")[1],
       name,
       per_page: perPage,
       page,
@@ -31,7 +31,7 @@ async function fetchArtifacts(octokit, repository, name) {
 }
 
 function getPrNumber() {
-  if (github.context.eventName === 'pull_request') {
+  if (github.context.eventName === "pull_request") {
     return github.context.payload.pull_request.number;
   }
   return undefined;
@@ -39,10 +39,23 @@ function getPrNumber() {
 
 async function run() {
   try {
-    const token = core.getInput('github-token');
-    const repository = core.getInput('repository');
-    const name = core.getInput('name');
-    const reSign = core.getInput('re-sign');
+    const token = core.getInput("github_token") || process.env.GITHUB_TOKEN;
+
+    if (!token) {
+      throw new Error("GitHub token is required");
+    }
+
+    const repository = core.getInput("repository");
+    if (!repository) {
+      throw new Error("Repository is required");
+    }
+
+    const name = core.getInput("name");
+    if (!name) {
+      throw new Error("Artifact name is required");
+    }
+
+    const reSign = core.getInput("re_sign");
     const prNumber = getPrNumber();
 
     const octokit = github.getOctokit(token);
@@ -61,20 +74,20 @@ async function run() {
     for (const artifact of artifacts) {
       console.log(
         `- ID: ${artifact.id}, Name: ${artifact.name}, Size: ${formatSize(
-          artifact.size_in_bytes,
-        )}, Expires at: ${artifact.expires_at}`,
+          artifact.size_in_bytes
+        )}, Expires at: ${artifact.expires_at}`
       );
     }
 
-    const firstArtifact = artifacts.find(artifact => !artifact.expired);
+    const firstArtifact = artifacts.find((artifact) => !artifact.expired);
     console.log(`First artifact: ${JSON.stringify(firstArtifact, null, 2)}`);
 
     const url = formatDownloadUrl(
       repository,
       firstArtifact.workflow_run.id,
-      firstArtifact.id,
+      firstArtifact.id
     );
-    console.log('Stable download URL:', url);
+    console.log("Stable download URL:", url);
 
     let artifactName = name;
     // There are artifacts from PR but the base artifact is gone, recreate with the original name
@@ -84,12 +97,12 @@ async function run() {
     } else if (prNumber && reSign) {
       artifactName = `${name}-${prNumber}`;
     }
-    core.setOutput('artifact-name', artifactName);
-    core.setOutput('artifact-id', firstArtifact.id);
-    core.setOutput('artifact-url', url);
+    core.setOutput("artifact-name", artifactName);
+    core.setOutput("artifact-id", firstArtifact.id);
+    core.setOutput("artifact-url", url);
     core.setOutput(
-      'artifact-ids',
-      artifactsByPrNumber.map(artifact => artifact.id).join(' '),
+      "artifact-ids",
+      artifactsByPrNumber.map((artifact) => artifact.id).join(" ")
     );
   } catch (error) {
     core.setFailed(`Action failed with error: ${error.message}`);

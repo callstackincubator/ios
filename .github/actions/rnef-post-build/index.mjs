@@ -1,10 +1,21 @@
-const core = require('@actions/core');
-const github = require('@actions/github');
+import * as core from '@actions/core';
+import * as github from '@actions/github';
 
 async function run() {
-  const token = core.getInput('github-token');
-  const titleInput = core.getInput('title');
-  const artifactUrl = core.getInput('artifact-url');
+  const token = core.getInput("github_token") || process.env.GITHUB_TOKEN;
+  if (!token) {
+    throw new Error("GitHub token is required");
+  }
+
+  const titleInput = core.getInput("title");
+  if (!titleInput) {
+    throw new Error("Title is required");
+  }
+
+  const artifactUrl = core.getInput("artifact_url");
+  if (!artifactUrl) {
+    throw new Error("Artifact URL is required");
+  }
 
   const title = `## ${titleInput}`;
   const body = `🔗 [Download link](${artifactUrl}).\n\n

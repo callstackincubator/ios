@@ -4,6 +4,7 @@
   "description": "Generate native fingerprint for RNEF builds",
   "main": "index.mjs",
   "dependencies": {
+    "@rnef/config": "^0.4.1",
     "@actions/core": "^1.11.1"
   }
 } 
