@@ -33,6 +33,7 @@ jobs:
           destination: 'simulator' # or 'device'
           scheme: 'YourScheme'
           configuration: 'Debug'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           # For device builds, add these:
           # certificate-base64: ${{ secrets.CERTIFICATE_BASE64 }}
           # certificate-password: ${{ secrets.CERTIFICATE_PASSWORD }}

@@ -13,7 +13,7 @@ outputs:
     description: 'The fingerprint hash'
     value: ${{ steps.fingerprint.outputs.hash }}
 runs:
-  using: "composite"
+  using: 'composite'
   steps:
     - name: Install dependencies
       run: npm install

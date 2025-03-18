@@ -1,8 +1,8 @@
-name: "Find Artifact"
-description: "Find the latest artifact"
+name: 'Find Artifact'
+description: 'Find the latest artifact'
 inputs:
   name:
-    description: "Artifact name"
+    description: 'Artifact name'
     required: false
   re-sign:
     description: Re-sign the app bundle with new JS bundle
@@ -19,16 +19,16 @@ inputs:
     default: ${{ github.repository }}
 outputs:
   artifact-id:
-    description: "The ID of the artifact"
+    description: 'The ID of the artifact'
     value: ${{ steps.find-artifact.outputs.artifact-id }}
   artifact-url:
-    description: "The URL of the artifact"
+    description: 'The URL of the artifact'
     value: ${{ steps.find-artifact.outputs.artifact-url }}
   artifact-ids:
-    description: "All IDs of the artifacts matching the name"
+    description: 'All IDs of the artifacts matching the name'
     value: ${{ steps.find-artifact.outputs.artifact-ids }}
 runs:
-  using: "composite"
+  using: 'composite'
   steps:
     - name: Install dependencies
       run: npm install

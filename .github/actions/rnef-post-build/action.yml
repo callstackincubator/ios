@@ -13,7 +13,7 @@ inputs:
     required: false
     default: ${{ github.token }}
 runs:
-  using: "composite"
+  using: 'composite'
   steps:
     - name: Install dependencies
       run: npm install
