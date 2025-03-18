@@ -46,7 +46,7 @@ jobs:
 
 | Input                         | Description                                | Required | Default               |
 | ----------------------------- | ------------------------------------------ | -------- | --------------------- |
-| `github-token`                | GitHub Token                               | No       | `${{ github.token }}` |
+| `github-token`                | GitHub Token                               | Yes      | -                     |
 | `working-directory`           | Working directory for the build command    | No       | `.`                   |
 | `destination`                 | Build destination: "simulator" or "device" | Yes      | `simulator`           |
 | `scheme`                      | Xcode scheme                               | Yes      | -                     |
