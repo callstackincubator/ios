@@ -11,6 +11,18 @@ inputs:
 outputs:
   hash:
     description: 'The fingerprint hash'
+    value: ${{ steps.fingerprint.outputs.hash }}
 runs:
-  using: 'node20'
-  main: 'index.mjs'
+  using: 'composite'
+  steps:
+    - name: Install dependencies
+      run: npm install
+      shell: bash
+      working-directory: ${{ github.action_path }}
+    - name: Run fingerprint
+      id: fingerprint
+      env:
+        INPUT_PLATFORM: ${{ inputs.platform }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}
+      run: node ${{ github.action_path }}/index.mjs
+      shell: bash

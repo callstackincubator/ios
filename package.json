@@ -1,7 +1,7 @@
 {
   "name": "action-ios",
   "version": "1.0.0",
-  "description": "GitHub Action for building iOS applications using RNEF (React Native EAS Fastlane)",
+  "description": "GitHub Action for building iOS applications using RNEF (React Native Enterprise Framework)",
   "main": "index.js",
   "author": "",
   "license": "MIT",

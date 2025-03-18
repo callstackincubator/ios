@@ -1,5 +1,5 @@
 name: 'Post Build'
-description: 'Post Build info'
+description: 'Post build comment for RNEF builds'
 
 inputs:
   artifact-url:
@@ -10,8 +10,19 @@ inputs:
     required: true
   github-token:
     description: A GitHub Personal Access Token with write access to the project
-    required: false
-    default: ${{ github.token }}
+    required: true
 runs:
-  using: 'node20'
-  main: 'index.js'
+  using: 'composite'
+  steps:
+    - name: Install dependencies
+      run: npm install
+      shell: bash
+      working-directory: ${{ github.action_path }}
+    - name: Post build
+      id: post-build
+      env:
+        INPUT_ARTIFACT_URL: ${{ inputs.artifact-url }}
+        INPUT_TITLE: ${{ inputs.title }}
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
+      run: node ${{ github.action_path }}/index.mjs
+      shell: bash

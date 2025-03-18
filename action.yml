@@ -8,8 +8,7 @@ branding:
 inputs:
   github-token:
     description: GitHub Token
-    required: false
-    default: ${{ github.token }}
+    required: true
   working-directory:
     description: 'Working directory for the build command'
     required: false
@@ -61,6 +60,10 @@ outputs:
 runs:
   using: 'composite'
   steps:
+    - name: Install dependencies
+      run: npm install
+      shell: bash
+
     - name: Validate inputs
       run: |
         if [ "${{ inputs.destination }}" != "simulator" ] && [ "${{ inputs.destination }}" != "device" ]; then
@@ -98,7 +101,7 @@ runs:
 
     - name: Native Fingerprint
       id: fingerprint
-      uses: callstackincubator/ios/.github/actions/rnef-native-fingerprint@v1
+      uses: callstackincubator/ios/.github/actions/rnef-native-fingerprint@fix/composite
       with:
         platform: ios
         working-directory: ${{ inputs.working-directory }}
@@ -110,10 +113,11 @@ runs:
 
     - name: Find artifact URL
       id: find-artifact
-      uses: callstackincubator/ios/.github/actions/find-artifact@v1
+      uses: callstackincubator/ios/.github/actions/find-artifact@fix/composite
       with:
         name: ${{ env.ARTIFACT_NAME }}
         re-sign: ${{ inputs.re-sign }}
+        github-token: ${{ inputs.github-token }}
 
     - name: Set Provisioning Profile Path
       run: |
@@ -252,7 +256,8 @@ runs:
 
     - name: Post Build
       if: ${{ github.event_name == 'pull_request' && inputs.comment-bot == 'true' }}
-      uses: callstackincubator/ios/.github/actions/rnef-post-build@v1
+      uses: callstackincubator/ios/.github/actions/rnef-post-build@fix/composite
       with:
         title: iOS ${{ inputs.configuration }} ${{ inputs.destination == 'simulator' && 'APP for simulators' || 'IPA for physical devices' }}
         artifact-url: ${{ steps.upload-artifact.outputs.artifact-url || steps.find-artifact.outputs.artifact-url }}
+        github-token: ${{ inputs.github-token }}

@@ -1,13 +1,13 @@
-import path from 'node:path';
-import core from '@actions/core';
-import {getConfig} from '@rnef/config';
-import {nativeFingerprint} from '@rnef/tools';
+import path from "node:path";
+import core from "@actions/core";
+import { getConfig } from "@rnef/config";
+import { nativeFingerprint } from "@rnef/tools";
 
-const ALLOWED_PLATFORMS = ['android', 'ios'];
+const ALLOWED_PLATFORMS = ["android", "ios"];
 
 async function run() {
-  const platform = core.getInput('platform');
-  const workingDirectory = core.getInput('working-directory');
+  const platform = core.getInput("platform");
+  const workingDirectory = core.getInput("working-directory");
   if (!ALLOWED_PLATFORMS.includes(platform)) {
     throw new Error(`Invalid platform: ${platform}`);
   }
@@ -22,10 +22,10 @@ async function run() {
     ...fingerprintOptions,
   });
 
-  console.log('Hash:', fingerprint.hash);
-  console.log('Sources:', fingerprint.sources);
+  console.log("Hash:", fingerprint.hash);
+  console.log("Sources:", fingerprint.sources);
 
-  core.setOutput('hash', fingerprint.hash);
+  core.setOutput("hash", fingerprint.hash);
 }
 
 await run();

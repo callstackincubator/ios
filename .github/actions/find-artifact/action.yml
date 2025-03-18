@@ -20,10 +20,26 @@ inputs:
 outputs:
   artifact-id:
     description: 'The ID of the artifact'
+    value: ${{ steps.find-artifact.outputs.artifact-id }}
   artifact-url:
     description: 'The URL of the artifact'
+    value: ${{ steps.find-artifact.outputs.artifact-url }}
   artifact-ids:
     description: 'All IDs of the artifacts matching the name'
+    value: ${{ steps.find-artifact.outputs.artifact-ids }}
 runs:
-  using: 'node20'
-  main: 'index.js'
+  using: 'composite'
+  steps:
+    - name: Install dependencies
+      run: npm install
+      shell: bash
+      working-directory: ${{ github.action_path }}
+    - name: Find artifact
+      id: find-artifact
+      env:
+        INPUT_NAME: ${{ inputs.name }}
+        INPUT_RE_SIGN: ${{ inputs.re-sign }}
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
+        INPUT_REPOSITORY: ${{ inputs.repository }}
+      run: node ${{ github.action_path }}/index.mjs
+      shell: bash
