@@ -10,8 +10,7 @@ inputs:
     required: true
   github-token:
     description: A GitHub Personal Access Token with write access to the project
-    required: false
-    default: ${{ github.token }}
+    required: true
 runs:
   using: 'composite'
   steps:

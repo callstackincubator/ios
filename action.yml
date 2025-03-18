@@ -8,8 +8,7 @@ branding:
 inputs:
   github-token:
     description: GitHub Token
-    required: false
-    default: ${{ github.token }}
+    required: true
   working-directory:
     description: 'Working directory for the build command'
     required: false
