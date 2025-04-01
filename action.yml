@@ -60,10 +60,6 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: Install dependencies
-      run: npm install
-      shell: bash
-
     - name: Validate inputs
       run: |
         if [ "${{ inputs.destination }}" != "simulator" ] && [ "${{ inputs.destination }}" != "device" ]; then
