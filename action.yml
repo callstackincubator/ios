@@ -97,7 +97,7 @@ runs:
 
     - name: Native Fingerprint
       id: fingerprint
-      uses: callstackincubator/ios/.github/actions/rnef-native-fingerprint@1
+      uses: callstackincubator/ios/.github/actions/rnef-native-fingerprint@v1
       with:
         platform: ios
         working-directory: ${{ inputs.working-directory }}
@@ -109,7 +109,7 @@ runs:
 
     - name: Find artifact URL
       id: find-artifact
-      uses: callstackincubator/ios/.github/actions/find-artifact@1
+      uses: callstackincubator/ios/.github/actions/find-artifact@v1
       with:
         name: ${{ env.ARTIFACT_NAME }}
         re-sign: ${{ inputs.re-sign }}
@@ -253,7 +253,7 @@ runs:
 
     - name: Post Build
       if: ${{ github.event_name == 'pull_request' && inputs.comment-bot == 'true' }}
-      uses: callstackincubator/ios/.github/actions/rnef-post-build@1
+      uses: callstackincubator/ios/.github/actions/rnef-post-build@v1
       with:
         title: iOS ${{ inputs.configuration }} ${{ inputs.destination == 'simulator' && 'APP for simulators' || 'IPA for physical devices' }}
         artifact-url: ${{ steps.upload-artifact.outputs.artifact-url || steps.find-artifact.outputs.artifact-url }}
