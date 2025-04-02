@@ -91,6 +91,7 @@ async function run() {
     } else if (prNumber && reSign) {
       artifactName = `${name}-${prNumber}`;
     }
+    console.log({ artifactName });
     core.setOutput("artifact-name", artifactName);
     core.setOutput("artifact-id", firstArtifact.id);
     core.setOutput("artifact-url", url);

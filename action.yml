@@ -221,6 +221,8 @@ runs:
 
         echo "artifact-name"
         echo ${{ steps.find-artifact.outputs.artifact-name }}
+        echo ${{ steps.find-artifact.outputs.artifact_name }}
+        echo ${{ steps.find-artifact.outputs.artifact-url }}
       shell: bash
       working-directory: ${{ inputs.working-directory }}
 
