@@ -30,6 +30,9 @@ outputs:
   artifact-ids:
     description: 'All IDs of the artifacts matching the name'
     value: ${{ steps.find-artifact.outputs.artifact-ids }}
+  artifact-name:
+    description: 'The name of the artifact - will append the PR number if the artifact is re-signed'
+    value: ${{ steps.find-artifact.outputs.artifact-name }}
 runs:
   using: 'composite'
   steps:
