@@ -50,7 +50,6 @@ async function run() {
 
     const reSign = core.getInput("re_sign");
     const prNumber = core.getInput("pr_number");
-    console.log({prNumber});
 
     const octokit = github.getOctokit(token);
     const artifactsByName = await fetchArtifacts(octokit, repository, name);
