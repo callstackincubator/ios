@@ -44,5 +44,6 @@ runs:
         INPUT_RE_SIGN: ${{ inputs.re-sign }}
         INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
         INPUT_REPOSITORY: ${{ inputs.repository }}
+        INPUT_PR_NUMBER: ${{ inputs.pr-number }}
       run: node ${{ github.action_path }}/index.mjs
       shell: bash
