@@ -30,13 +30,6 @@ async function fetchArtifacts(octokit, repository, name) {
   return result;
 }
 
-function getPrNumber() {
-  if (github.context.eventName === "pull_request") {
-    return github.context.payload.pull_request.number;
-  }
-  return undefined;
-}
-
 async function run() {
   try {
     const token = core.getInput("github_token") || process.env.GITHUB_TOKEN;
@@ -56,7 +49,8 @@ async function run() {
     }
 
     const reSign = core.getInput("re_sign");
-    const prNumber = getPrNumber();
+    const prNumber = core.getInput("pr_number");
+    console.log({prNumber});
 
     const octokit = github.getOctokit(token);
     const artifactsByName = await fetchArtifacts(octokit, repository, name);

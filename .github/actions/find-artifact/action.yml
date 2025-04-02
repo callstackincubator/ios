@@ -7,6 +7,9 @@ inputs:
   re-sign:
     description: Re-sign the app bundle with new JS bundle
     required: false
+  pr-number:
+    description: The pull request number
+    required: false
   github-token:
     description: A GitHub Personal Access Token with write access to the project
     required: false

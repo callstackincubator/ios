@@ -114,6 +114,7 @@ runs:
         name: ${{ env.ARTIFACT_NAME }}
         re-sign: ${{ inputs.re-sign }}
         github-token: ${{ inputs.github-token }}
+        pr-number: ${{ github.event.pull_request.number }}
 
     - name: Set Provisioning Profile Path
       run: |
