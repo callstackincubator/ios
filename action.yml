@@ -218,6 +218,9 @@ runs:
         npx rnef sign:ios ${{ env.ARTIFACT_PATH }} \
           --build-jsbundle \
           --identity ${{ env.IDENTITY }}
+
+        echo "artifact-name"
+        echo ${{ steps.find-artifact.outputs.artifact-name }}
       shell: bash
       working-directory: ${{ inputs.working-directory }}
 
