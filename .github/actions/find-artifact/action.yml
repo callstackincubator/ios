@@ -36,10 +36,6 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: Install dependencies
-      run: npm install
-      shell: bash
-      working-directory: ${{ github.action_path }}
     - name: Find artifact
       id: find-artifact
       env:
