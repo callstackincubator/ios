@@ -221,19 +221,29 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working-directory }}
 
+    # Find artifact URL again before uploading, as other concurrent workflows could upload the same artifact
+    - name: Find artifact URL again before uploading
+      id: find-artifact-after-build
+      uses: callstackincubator/ios/.github/actions/find-artifact@v1
+      with:
+        name: ${{ env.ARTIFACT_NAME }}
+        re-sign: ${{ inputs.re-sign }}
+        github-token: ${{ inputs.github-token }}
+        pr-number: ${{ github.event.pull_request.number }}
+
     - name: Upload Artifact
       id: upload-artifact
-      if: ${{ !steps.find-artifact.outputs.artifact-url || (inputs.re-sign == 'true' && github.event_name == 'pull_request') }}
+      if: ${{ !steps.find-artifact-after-build.outputs.artifact-url || (inputs.re-sign == 'true' && github.event_name == 'pull_request') }}
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ steps.find-artifact.outputs.artifact-name || env.ARTIFACT_NAME }}
+        name: ${{ steps.find-artifact-after-build.outputs.artifact-name || env.ARTIFACT_NAME }}
         path: ${{ env.ARTIFACT_PATH }}
         if-no-files-found: error
 
     - name: Delete Old Re-Signed Artifacts
-      if: ${{ steps.find-artifact.outputs.artifact-url && inputs.destination == 'device' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
+      if: ${{ steps.find-artifact-after-build.outputs.artifact-url && inputs.destination == 'device' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
       run: |
-        for ID in ${{ steps.find-artifact.outputs.artifact-ids }}; do
+        for ID in ${{ steps.find-artifact-after-build.outputs.artifact-ids }}; do
           echo "Deleting artifact with ID: $ID"
           curl -X DELETE -H "Authorization: token ${{ inputs.github-token }}" \
             "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/$ID"
@@ -241,7 +251,7 @@ runs:
       shell: bash
 
     - name: Clean Up Code Signing (device builds only)
-      if: ${{ !steps.find-artifact.outputs.artifact-url && inputs.destination == 'device' }}
+      if: ${{ !steps.find-artifact-after-build.outputs.artifact-url && inputs.destination == 'device' }}
       run: |
         KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
         security delete-keychain "$KEYCHAIN_PATH"
@@ -256,5 +266,5 @@ runs:
       uses: callstackincubator/ios/.github/actions/rnef-post-build@v1
       with:
         title: iOS ${{ inputs.configuration }} ${{ inputs.destination == 'simulator' && 'APP for simulators' || 'IPA for physical devices' }}
-        artifact-url: ${{ steps.upload-artifact.outputs.artifact-url || steps.find-artifact.outputs.artifact-url }}
+        artifact-url: ${{ steps.upload-artifact.outputs.artifact-url || steps.find-artifact-after-build.outputs.artifact-url }}
         github-token: ${{ inputs.github-token }}
