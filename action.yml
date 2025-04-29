@@ -116,6 +116,30 @@ runs:
         github-token: ${{ inputs.github-token }}
         pr-number: ${{ github.event.pull_request.number }}
 
+    - name: Set ARTIFACT_PATH from existing artifact
+      if: ${{ steps.find-artifact.outputs.artifact-url && inputs.re-sign != 'true' && env.ARTIFACT_PATH == '' }}
+      run: |
+        curl -L -H "Authorization: token ${{ inputs.github-token }}" \
+          -o artifact.zip \
+          "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/${{ steps.find-artifact.outputs.artifact-id }}/zip"
+
+        unzip artifact.zip -d downloaded-artifacts
+        ls -l downloaded-artifacts
+
+        if [ "${{ inputs.destination }}" == "device" ]; then
+          ARTIFACT_PATH=$(find downloaded-artifacts -name "*.ipa" -print -quit)
+        else
+          ARTIFACT_PATH=$(find downloaded-artifacts -name "*.tar.gz" -print -quit)
+        fi
+
+        if [ -z "$ARTIFACT_PATH" ]; then
+          echo "No build artifact found in the extracted contents."
+          exit 1
+        fi
+
+        echo "ARTIFACT_PATH=$ARTIFACT_PATH" >> $GITHUB_ENV
+      shell: bash
+
     - name: Set Provisioning Profile Path
       run: |
         echo "PROFILE_DIR=$HOME/Library/MobileDevice/Provisioning Profiles" >> $GITHUB_ENV
