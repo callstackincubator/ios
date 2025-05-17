@@ -52,10 +52,10 @@ inputs:
 outputs:
   artifact-url:
     description: 'URL of the relevant iOS build artifact (could be cached)'
-    value: ${{ steps.upload-artifact.outputs.artifact-url || (steps.find-artifact.outcome == 'success' && steps.find-artifact.outputs.artifact-url) }}
+    value: ${{ steps.upload-artifact.outputs.artifact-url || env.ARTIFACT_URL }}
   artifact-id:
     description: 'ID of the relevant iOS build artifact (could be cached)'
-    value: ${{ steps.upload-artifact.outputs.artifact-id || (steps.find-artifact.outcome == 'success' && steps.find-artifact.outputs.artifact-id) }}
+    value: ${{ steps.upload-artifact.outputs.artifact-id || env.ARTIFACT_ID }}
 
 runs:
   using: 'composite'
@@ -104,21 +104,17 @@ runs:
       working-directory: ${{ inputs.working-directory }}
 
     - name: Find artifact URL
-      id: find-artifact
       run: |
-        OUTPUT=$(npx rnef remote-cache list -p ios --traits $ARTIFACT_TRAITS --json)
         if ${{ inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
-          echo "ARTIFACT_TRAITS=rnef-ios-${{ inputs.destination }}-${{ inputs.configuration }}-${{ env.FINGERPRINT }}-${{ github.event.pull_request.number}}" >> $GITHUB_ENV
+          echo "ARTIFACT_TRAITS=${{ inputs.destination }}-${{ inputs.configuration }}-${{ env.FINGERPRINT }}-${{ github.event.pull_request.number}}" >> $GITHUB_ENV
         else
-          echo "ARTIFACT_TRAITS=rnef-ios-${{ inputs.destination }}-${{ inputs.configuration }}-${{ env.FINGERPRINT }}" >> $GITHUB_ENV
+          echo "ARTIFACT_TRAITS=${{ inputs.destination }}-${{ inputs.configuration }}-${{ env.FINGERPRINT }}" >> $GITHUB_ENV
         fi
+        OUTPUT=$(npx rnef remote-cache list -p ios --traits $ARTIFACT_TRAITS --json)
         echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
         echo "ARTIFACT_ID=$(echo "$OUTPUT" | jq -r '.id')" >> $GITHUB_ENV
         echo "ARTIFACT_NAME=rnef-ios-$ARTIFACT_TRAITS" >> $GITHUB_ENV
       shell: bash
-      output:
-        artifact-url: ${{ env.ARTIFACT_URL }}
-        artifact-id: ${{ env.ARTIFACT_ID }}
 
     - name: Set Provisioning Profile Path
       run: |
@@ -126,7 +122,7 @@ runs:
       shell: bash
 
     - name: Setup Code Signing (device builds only)
-      if: ${{ inputs.re-sign == 'true' || (!steps.find-artifact.outputs.artifact-url && inputs.destination == 'device') }}
+      if: ${{ inputs.re-sign == 'true' || (!env.ARTIFACT_URL && inputs.destination == 'device') }}
       run: |
         # Create temporary keychain
         KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
@@ -157,7 +153,7 @@ runs:
       shell: bash
 
     - name: Determine iOS sourceDir
-      if: ${{ !steps.find-artifact.outputs.artifact-url }}
+      if: ${{ !env.ARTIFACT_URL }}
       run: |
         JSON_OUTPUT=$(npx rnef config -p ios)
         echo "$JSON_OUTPUT" | jq -r '.project'
@@ -167,7 +163,7 @@ runs:
       working-directory: ${{ inputs.working-directory }}
 
     - name: Build iOS
-      if: ${{ !steps.find-artifact.outputs.artifact-url }}
+      if: ${{ !env.ARTIFACT_URL }}
       run: |
         npx rnef build:ios \
           ${{ inputs.destination == 'device' && '--archive' || '' }} \
@@ -180,7 +176,7 @@ runs:
       working-directory: ${{ inputs.working-directory }}
 
     - name: Find Build Artifact
-      if: ${{ !steps.find-artifact.outputs.artifact-url }}
+      if: ${{ !env.ARTIFACT_URL }}
       run: |
         if [ "${{ inputs.destination }}" == "device" ]; then
           IPA_PATH=$(find .rnef/cache/ios/export -maxdepth 1 -name '*.ipa' -type f | head -1)
@@ -200,14 +196,14 @@ runs:
       shell: bash
 
     - name: Download and Unpack IPA
-      if: ${{ steps.find-artifact.outputs.artifact-url && inputs.destination == 'device' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
+      if: ${{ env.ARTIFACT_URL && inputs.destination == 'device' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
       run: |
         IPA_PATH=$(npx rnef remote-cache download -p ios --traits $ARTIFACT_TRAITS --json)
         echo "ARTIFACT_PATH=$IPA_PATH" >> $GITHUB_ENV
       shell: bash
 
     - name: Re-sign IPA
-      if: ${{ steps.find-artifact.outputs.artifact-url && inputs.destination == 'device' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
+      if: ${{ env.ARTIFACT_URL && inputs.destination == 'device' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
       run: |
         npx rnef sign:ios ${{ env.ARTIFACT_PATH }} \
           --build-jsbundle \
@@ -217,35 +213,30 @@ runs:
 
     # Find artifact URL again before uploading, as other concurrent workflows could upload the same artifact
     - name: Find artifact URL again before uploading
-      id: find-artifact-after-build
       run: |
         OUTPUT=$(npx rnef remote-cache list -p ios --traits $ARTIFACT_TRAITS --json)
         echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
         echo "ARTIFACT_ID=$(echo "$OUTPUT" | jq -r '.id')" >> $GITHUB_ENV
-        echo "ARTIFACT_NAME=$(echo "$OUTPUT" | jq -r '.name')" >> $GITHUB_ENV
+        echo "ARTIFACT_NAME=rnef-ios-$ARTIFACT_TRAITS" >> $GITHUB_ENV
       shell: bash
-      output:
-        artifact-url: ${{ env.ARTIFACT_URL }}
-        artifact-id: ${{ env.ARTIFACT_ID }}
-        artifact-name: ${{ env.ARTIFACT_NAME }}
 
     - name: Upload Artifact
       id: upload-artifact
-      if: ${{ !steps.find-artifact-after-build.outputs.artifact-url || (inputs.re-sign == 'true' && github.event_name == 'pull_request') }}
+      if: ${{ !env.ARTIFACT_URL || (inputs.re-sign == 'true' && github.event_name == 'pull_request') }}
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ steps.find-artifact-after-build.outputs.artifact-name || env.ARTIFACT_NAME }}
+        name: ${{ env.ARTIFACT_NAME }}
         path: ${{ env.ARTIFACT_PATH }}
         if-no-files-found: error
 
     - name: Delete Old Re-Signed Artifacts
-      if: ${{ steps.find-artifact-after-build.outputs.artifact-url && inputs.destination == 'device' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
+      if: ${{ env.ARTIFACT_URL && inputs.destination == 'device' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
       run: |
         npx rnef remote-cache delete -p ios --traits $ARTIFACT_TRAITS --json
       shell: bash
 
     - name: Clean Up Code Signing (device builds only)
-      if: ${{ !steps.find-artifact-after-build.outputs.artifact-url && inputs.destination == 'device' }}
+      if: ${{ !env.ARTIFACT_URL && inputs.destination == 'device' }}
       run: |
         KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
         security delete-keychain "$KEYCHAIN_PATH"
@@ -260,5 +251,5 @@ runs:
       uses: callstackincubator/ios/.github/actions/rnef-post-build@feat/remote-cache-command
       with:
         title: iOS ${{ inputs.configuration }} ${{ inputs.destination == 'simulator' && 'APP for simulators' || 'IPA for physical devices' }}
-        artifact-url: ${{ steps.upload-artifact.outputs.artifact-url || steps.find-artifact-after-build.outputs.artifact-url }}
+        artifact-url: ${{ steps.upload-artifact.outputs.artifact-url || env.ARTIFACT_URL }}
         github-token: ${{ inputs.github-token }}
