@@ -113,21 +113,26 @@ runs:
 
     - name: Set Artifact Traits
       run: |
-        if [ "${{ inputs.re-sign }}" == "true" ] && [ "${{ github.event_name }}" == "pull_request" ]; then
-          ARTIFACT_TRAITS="${{ inputs.destination }},${{ inputs.configuration }},${{ github.event.pull_request.number}}"
-        else
-          ARTIFACT_TRAITS="${{ inputs.destination }},${{ inputs.configuration }}"
+        ARTIFACT_TRAITS_PR="${{ inputs.destination }},${{ inputs.configuration }},${{ github.event.pull_request.number}}"
+        ARTIFACT_TRAITS_REGULAR="${{ inputs.destination }},${{ inputs.configuration }}"
+
+        # Check if PR-related artifact existis
+        OUTPUT=$(npx rnef remote-cache list -p ios --traits "${ARTIFACT_TRAITS_PR}" --json)
+        echo "ARTIFACT_TRAITS=$ARTIFACT_TRAITS_PR" >> $GITHUB_ENV
+        # If PR-related artifact doesn't exist, check if for regular artifact
+        if [ -z "$OUTPUT" ]; then
+          OUTPUT=$(npx rnef remote-cache list -p ios --traits "${ARTIFACT_TRAITS_REGULAR}" --json)
+          echo "ARTIFACT_TRAITS=$ARTIFACT_TRAITS_REGULAR" >> $GITHUB_ENV
         fi
-        echo "ARTIFACT_TRAITS=$ARTIFACT_TRAITS" >> $GITHUB_ENV
-        # Transform commas to hyphens
-        ARTIFACT_TRAITS_HYPHENATED=$(echo "$ARTIFACT_TRAITS" | tr ',' '-')
-        ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT=$ARTIFACT_TRAITS_HYPHENATED-$FINGERPRINT
-        OUTPUT=$(npx rnef remote-cache list -p ios --traits "${ARTIFACT_TRAITS}" --json)
         echo "$OUTPUT"
+        
         # Revert undefined change when https://github.com/callstack/rnef/pull/338 is merged
         if [ -z "$OUTPUT" ] || [ "$OUTPUT" = "undefined" ]; then
           echo "No artifact found"
         else
+          # Transform commas to hyphens
+          ARTIFACT_TRAITS_HYPHENATED=$(echo "$ARTIFACT_TRAITS" | tr ',' '-')
+          ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT=$ARTIFACT_TRAITS_HYPHENATED-$FINGERPRINT
           echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
           echo "ARTIFACT_ID=$(echo "$OUTPUT" | jq -r '.id')" >> $GITHUB_ENV
           echo "ARTIFACT_NAME=rnef-ios-$ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT" >> $GITHUB_ENV
