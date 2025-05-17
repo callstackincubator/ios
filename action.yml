@@ -99,25 +99,24 @@ runs:
       id: fingerprint
       run: |
         FINGERPRINT=$(npx rnef fingerprint -p ios --verbose | grep -oE '[a-f0-9]{40}')
-        echo $FINGERPRINT
+        echo "FINGERPRINT=$FINGERPRINT" >> $GITHUB_ENV
       shell: bash
       working-directory: ${{ inputs.working-directory }}
 
     - name: Set Artifact Traits
       run: |
         if ${{ inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
-          echo "ARTIFACT_TRAITS=${{ inputs.destination }},${{ inputs.configuration }},${{ env.FINGERPRINT }},${{ github.event.pull_request.number}}" >> $GITHUB_ENV
+          echo "ARTIFACT_TRAITS=${{ inputs.destination }},${{ inputs.configuration }},${{ github.event.pull_request.number}}" >> $GITHUB_ENV
         else
-          echo "ARTIFACT_TRAITS=${{ inputs.destination }},${{ inputs.configuration }},${{ env.FINGERPRINT }}" >> $GITHUB_ENV
+          echo "ARTIFACT_TRAITS=${{ inputs.destination }},${{ inputs.configuration }}" >> $GITHUB_ENV
         fi
         # Transform commas to hyphens
         ARTIFACT_TRAITS_HYPHENATED=$(echo "$ARTIFACT_TRAITS" | tr ',' '-')
-        echo "ARTIFACT_TRAITS_HYPHENATED=$ARTIFACT_TRAITS_HYPHENATED" >> $GITHUB_ENV
+        ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT=$ARTIFACT_TRAITS_HYPHENATED-$FINGERPRINT
         OUTPUT=$(npx rnef remote-cache list -p ios --traits "$ARTIFACT_TRAITS" --json)
-      
         echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
         echo "ARTIFACT_ID=$(echo "$OUTPUT" | jq -r '.id')" >> $GITHUB_ENV
-        echo "ARTIFACT_NAME=rnef-ios-$ARTIFACT_TRAITS_HYPHENATED" >> $GITHUB_ENV
+        echo "ARTIFACT_NAME=rnef-ios-$ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT" >> $GITHUB_ENV
       shell: bash
 
     - name: Set Provisioning Profile Path
@@ -221,7 +220,6 @@ runs:
         OUTPUT=$(npx rnef remote-cache list -p ios --traits "$ARTIFACT_TRAITS" --json)
         echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
         echo "ARTIFACT_ID=$(echo "$OUTPUT" | jq -r '.id')" >> $GITHUB_ENV
-        echo "ARTIFACT_NAME=rnef-ios-$ARTIFACT_TRAITS_HYPHENATED" >> $GITHUB_ENV
       shell: bash
 
     - name: Upload Artifact
