@@ -1,22 +1,22 @@
-name: "Remote Build - iOS"
-description: "Github implementation of the RNEF Remote Build for iOS"
+name: 'Remote Build - iOS'
+description: 'Github implementation of the RNEF Remote Build for iOS'
 
 branding:
-  icon: "box"
-  color: "blue"
+  icon: 'box'
+  color: 'blue'
 
 inputs:
   github-token:
     description: GitHub Token
     required: true
   working-directory:
-    description: "Working directory for the build command"
+    description: 'Working directory for the build command'
     required: false
-    default: "."
+    default: '.'
   destination:
     description: 'Destination to build to: "simulator" or "device". Using "device" runs "rnef build:ios --archive" and code signing settings (certificate, provisioning profile, keychain password) are required.'
     required: true
-    default: "simulator" # 'simulator' or 'device'
+    default: 'simulator' # 'simulator' or 'device'
   scheme:
     description: Xcode scheme
     required: true
@@ -27,38 +27,38 @@ inputs:
     description: Re-sign the app bundle with new JS bundle
     required: false
   certificate-base64:
-    description: "[Device Builds] Base64 encoded P12 file containing Apple certificate (incl. private key)"
+    description: '[Device Builds] Base64 encoded P12 file containing Apple certificate (incl. private key)'
     required: false
   certificate-password:
-    description: "[Device Builds] Password for the P12 file containing the Apple certificate"
+    description: '[Device Builds] Password for the P12 file containing the Apple certificate'
     required: false
   provisioning-profile-base64:
-    description: "[Device Builds] Base64 encoded Apple provisioning profile (*.mobileprovision)"
+    description: '[Device Builds] Base64 encoded Apple provisioning profile (*.mobileprovision)'
     required: false
   provisioning-profile-name:
-    description: "[Device Builds] Name of the Apple provisioning profile (without .mobileprovision extension)"
+    description: '[Device Builds] Name of the Apple provisioning profile (without .mobileprovision extension)'
     required: false
   keychain-password:
-    description: "[Device Builds] Password that will protect temporary keychain used for signing (can be a random string)"
+    description: '[Device Builds] Password that will protect temporary keychain used for signing (can be a random string)'
     required: false
   rnef-build-extra-params:
     description: 'Extra parameters to pass to "rnef build:ios"'
     required: false
   comment-bot:
-    description: "Whether to send a comment under PR with the link to the generated build"
+    description: 'Whether to send a comment under PR with the link to the generated build'
     required: false
     default: true
 
 outputs:
   artifact-url:
-    description: "URL of the relevant iOS build artifact (could be cached)"
+    description: 'URL of the relevant iOS build artifact (could be cached)'
     value: ${{ steps.upload-artifact.outputs.artifact-url || (steps.find-artifact.outcome == 'success' && steps.find-artifact.outputs.artifact-url) }}
   artifact-id:
-    description: "ID of the relevant iOS build artifact (could be cached)"
+    description: 'ID of the relevant iOS build artifact (could be cached)'
     value: ${{ steps.upload-artifact.outputs.artifact-id || (steps.find-artifact.outcome == 'success' && steps.find-artifact.outputs.artifact-id) }}
 
 runs:
-  using: "composite"
+  using: 'composite'
   steps:
     - name: Validate inputs
       run: |
@@ -102,15 +102,6 @@ runs:
         echo $FINGERPRINT
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-
-    - name: Set Artifact Traits
-      run: |
-        if ${{ inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
-          echo "ARTIFACT_TRAITS=rnef-ios-${{ inputs.destination }}-${{ inputs.configuration }}-${{ env.FINGERPRINT }}-${{ github.event.pull_request.number}}" >> $GITHUB_ENV
-        else
-          echo "ARTIFACT_TRAITS=rnef-ios-${{ inputs.destination }}-${{ inputs.configuration }}-${{ env.FINGERPRINT }}" >> $GITHUB_ENV
-        fi
-      shell: bash
 
     - name: Find artifact URL
       id: find-artifact
