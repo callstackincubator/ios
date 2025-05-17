@@ -125,7 +125,7 @@ runs:
           echo "ARTIFACT_TRAITS=$ARTIFACT_TRAITS_REGULAR" >> $GITHUB_ENV
         fi
         echo "$OUTPUT"
-        
+
         # Revert undefined change when https://github.com/callstack/rnef/pull/338 is merged
         if [ -z "$OUTPUT" ] || [ "$OUTPUT" = "undefined" ]; then
           echo "No artifact found"
@@ -238,8 +238,12 @@ runs:
     - name: Find artifact URL again before uploading
       run: |
         OUTPUT=$(npx rnef remote-cache list -p ios --traits "${ARTIFACT_TRAITS}" --json)
-        echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
-        echo "ARTIFACT_ID=$(echo "$OUTPUT" | jq -r '.id')" >> $GITHUB_ENV
+        if [ -z "$OUTPUT" ]; then
+          echo "No artifact found"
+        else
+          echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
+          echo "ARTIFACT_ID=$(echo "$OUTPUT" | jq -r '.id')" >> $GITHUB_ENV
+        fi
       shell: bash
 
     - name: Upload Artifact
@@ -251,11 +255,11 @@ runs:
         path: ${{ env.ARTIFACT_PATH }}
         if-no-files-found: error
 
-    - name: Delete Old Re-Signed Artifacts
-      if: ${{ env.ARTIFACT_URL && inputs.destination == 'device' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
-      run: |
-        npx rnef remote-cache delete -p ios --traits "${ARTIFACT_TRAITS}" --json
-      shell: bash
+    # - name: Delete Old Re-Signed Artifacts
+    #   if: ${{ env.ARTIFACT_URL && inputs.destination == 'device' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
+    #   run: |
+    #     npx rnef remote-cache delete -p ios --traits "${ARTIFACT_TRAITS}" --json
+    #   shell: bash
 
     - name: Clean Up Code Signing (device builds only)
       if: ${{ !env.ARTIFACT_URL && inputs.destination == 'device' }}
