@@ -99,10 +99,17 @@ runs:
       id: fingerprint
       run: |
         FINGERPRINT_OUTPUT=$(npx rnef fingerprint -p ios --verbose)
+        echo $FINGERPRINT_OUTPUT
         FINGERPRINT=$(echo "$FINGERPRINT_OUTPUT" | grep -oE '[a-f0-9]{40}')
         echo "FINGERPRINT=$FINGERPRINT" >> $GITHUB_ENV
       shell: bash
       working-directory: ${{ inputs.working-directory }}
+
+    - name: Populate GitHub Token in Cache
+      run: |
+        mkdir -p .rnef/cache
+        echo "{\"githubToken\": \"${{ inputs.github-token }}\"}" > .rnef/cache/project.json
+      shell: bash
 
     - name: Set Artifact Traits
       run: |
@@ -254,6 +261,11 @@ runs:
         PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
         PROFILE_PATH="$PROFILE_DIR/${{ inputs.provisioning-profile-name }}.mobileprovision"
         rm "$PROFILE_PATH"
+      shell: bash
+
+    - name: Cleanup Cache
+      run: |
+        rm -rf .rnef/cache/project.json
       shell: bash
 
     - name: Post Build
