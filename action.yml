@@ -127,11 +127,11 @@ runs:
         # Revert undefined change when https://github.com/callstack/rnef/pull/338 is merged
         if [ -z "$OUTPUT" ] || [ "$OUTPUT" = "undefined" ]; then
           echo "No artifact found"
-          exit 1
+        else
+          echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
+          echo "ARTIFACT_ID=$(echo "$OUTPUT" | jq -r '.id')" >> $GITHUB_ENV
+          echo "ARTIFACT_NAME=rnef-ios-$ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT" >> $GITHUB_ENV
         fi
-        echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
-        echo "ARTIFACT_ID=$(echo "$OUTPUT" | jq -r '.id')" >> $GITHUB_ENV
-        echo "ARTIFACT_NAME=rnef-ios-$ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT" >> $GITHUB_ENV
       shell: bash
 
     - name: Set Provisioning Profile Path
