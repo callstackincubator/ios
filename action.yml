@@ -98,7 +98,8 @@ runs:
     - name: Native Fingerprint
       id: fingerprint
       run: |
-        FINGERPRINT=$(npx rnef fingerprint -p ios --verbose | grep -oE '[a-f0-9]{40}')
+        FINGERPRINT_OUTPUT=$(npx rnef fingerprint -p ios --verbose)
+        FINGERPRINT=$(echo "$FINGERPRINT_OUTPUT" | grep -oE '[a-f0-9]{40}')
         echo "FINGERPRINT=$FINGERPRINT" >> $GITHUB_ENV
       shell: bash
       working-directory: ${{ inputs.working-directory }}
@@ -106,14 +107,21 @@ runs:
     - name: Set Artifact Traits
       run: |
         if [ "${{ inputs.re-sign }}" == "true" ] && [ "${{ github.event_name }}" == "pull_request" ]; then
-          echo "ARTIFACT_TRAITS=${{ inputs.destination }},${{ inputs.configuration }},${{ github.event.pull_request.number}}" >> $GITHUB_ENV
+          ARTIFACT_TRAITS="${{ inputs.destination }},${{ inputs.configuration }},${{ github.event.pull_request.number}}"
         else
-          echo "ARTIFACT_TRAITS=${{ inputs.destination }},${{ inputs.configuration }}" >> $GITHUB_ENV
+          ARTIFACT_TRAITS="${{ inputs.destination }},${{ inputs.configuration }}"
         fi
+        echo "ARTIFACT_TRAITS=$ARTIFACT_TRAITS" >> $GITHUB_ENV
         # Transform commas to hyphens
         ARTIFACT_TRAITS_HYPHENATED=$(echo "$ARTIFACT_TRAITS" | tr ',' '-')
         ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT=$ARTIFACT_TRAITS_HYPHENATED-$FINGERPRINT
-        OUTPUT=$(npx rnef remote-cache list -p ios --traits "$ARTIFACT_TRAITS" --json)
+        OUTPUT=$(npx rnef remote-cache list -p ios --traits "${ARTIFACT_TRAITS}" --json)
+        echo "$OUTPUT"
+        # Revert undefined change when https://github.com/callstack/rnef/pull/338 is merged
+        if [ -z "$OUTPUT" ] || [ "$OUTPUT" = "undefined" ]; then
+          echo "No artifact found"
+          exit 1
+        fi
         echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
         echo "ARTIFACT_ID=$(echo "$OUTPUT" | jq -r '.id')" >> $GITHUB_ENV
         echo "ARTIFACT_NAME=rnef-ios-$ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT" >> $GITHUB_ENV
@@ -201,7 +209,7 @@ runs:
     - name: Download and Unpack IPA
       if: ${{ env.ARTIFACT_URL && inputs.destination == 'device' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
       run: |
-        IPA_PATH=$(npx rnef remote-cache download -p ios --traits "$ARTIFACT_TRAITS" --json)
+        IPA_PATH=$(npx rnef remote-cache download -p ios --traits "${ARTIFACT_TRAITS}" --json)
         echo "ARTIFACT_PATH=$IPA_PATH" >> $GITHUB_ENV
       shell: bash
 
@@ -217,7 +225,7 @@ runs:
     # Find artifact URL again before uploading, as other concurrent workflows could upload the same artifact
     - name: Find artifact URL again before uploading
       run: |
-        OUTPUT=$(npx rnef remote-cache list -p ios --traits "$ARTIFACT_TRAITS" --json)
+        OUTPUT=$(npx rnef remote-cache list -p ios --traits "${ARTIFACT_TRAITS}" --json)
         echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
         echo "ARTIFACT_ID=$(echo "$OUTPUT" | jq -r '.id')" >> $GITHUB_ENV
       shell: bash
@@ -234,7 +242,7 @@ runs:
     - name: Delete Old Re-Signed Artifacts
       if: ${{ env.ARTIFACT_URL && inputs.destination == 'device' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
       run: |
-        npx rnef remote-cache delete -p ios --traits $ARTIFACT_TRAITS --json
+        npx rnef remote-cache delete -p ios --traits "${ARTIFACT_TRAITS}" --json
       shell: bash
 
     - name: Clean Up Code Signing (device builds only)
