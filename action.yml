@@ -1,22 +1,22 @@
-name: 'Remote Build - iOS'
-description: 'Github implementation of the RNEF Remote Build for iOS'
+name: "Remote Build - iOS"
+description: "Github implementation of the RNEF Remote Build for iOS"
 
 branding:
-  icon: 'box'
-  color: 'blue'
+  icon: "box"
+  color: "blue"
 
 inputs:
   github-token:
     description: GitHub Token
     required: true
   working-directory:
-    description: 'Working directory for the build command'
+    description: "Working directory for the build command"
     required: false
-    default: '.'
+    default: "."
   destination:
     description: 'Destination to build to: "simulator" or "device". Using "device" runs "rnef build:ios --archive" and code signing settings (certificate, provisioning profile, keychain password) are required.'
     required: true
-    default: 'simulator' # 'simulator' or 'device'
+    default: "simulator" # 'simulator' or 'device'
   scheme:
     description: Xcode scheme
     required: true
@@ -27,38 +27,38 @@ inputs:
     description: Re-sign the app bundle with new JS bundle
     required: false
   certificate-base64:
-    description: '[Device Builds] Base64 encoded P12 file containing Apple certificate (incl. private key)'
+    description: "[Device Builds] Base64 encoded P12 file containing Apple certificate (incl. private key)"
     required: false
   certificate-password:
-    description: '[Device Builds] Password for the P12 file containing the Apple certificate'
+    description: "[Device Builds] Password for the P12 file containing the Apple certificate"
     required: false
   provisioning-profile-base64:
-    description: '[Device Builds] Base64 encoded Apple provisioning profile (*.mobileprovision)'
+    description: "[Device Builds] Base64 encoded Apple provisioning profile (*.mobileprovision)"
     required: false
   provisioning-profile-name:
-    description: '[Device Builds] Name of the Apple provisioning profile (without .mobileprovision extension)'
+    description: "[Device Builds] Name of the Apple provisioning profile (without .mobileprovision extension)"
     required: false
   keychain-password:
-    description: '[Device Builds] Password that will protect temporary keychain used for signing (can be a random string)'
+    description: "[Device Builds] Password that will protect temporary keychain used for signing (can be a random string)"
     required: false
   rnef-build-extra-params:
     description: 'Extra parameters to pass to "rnef build:ios"'
     required: false
   comment-bot:
-    description: 'Whether to send a comment under PR with the link to the generated build'
+    description: "Whether to send a comment under PR with the link to the generated build"
     required: false
     default: true
 
 outputs:
   artifact-url:
-    description: 'URL of the relevant iOS build artifact (could be cached)'
+    description: "URL of the relevant iOS build artifact (could be cached)"
     value: ${{ steps.upload-artifact.outputs.artifact-url || (steps.find-artifact.outcome == 'success' && steps.find-artifact.outputs.artifact-url) }}
   artifact-id:
-    description: 'ID of the relevant iOS build artifact (could be cached)'
+    description: "ID of the relevant iOS build artifact (could be cached)"
     value: ${{ steps.upload-artifact.outputs.artifact-id || (steps.find-artifact.outcome == 'success' && steps.find-artifact.outputs.artifact-id) }}
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: Validate inputs
       run: |
@@ -97,24 +97,37 @@ runs:
 
     - name: Native Fingerprint
       id: fingerprint
-      uses: callstackincubator/ios/.github/actions/rnef-native-fingerprint@v1
-      with:
-        platform: ios
-        working-directory: ${{ inputs.working-directory }}
-
-    - name: Set Artifact Name
       run: |
-        echo "ARTIFACT_NAME=rnef-ios-${{ inputs.destination }}-${{ inputs.configuration }}-${{ steps.fingerprint.outputs.hash}}" >> $GITHUB_ENV
+        FINGERPRINT=$(npx rnef fingerprint -p ios --raw --verbose)
+        echo $FINGERPRINT
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+
+    - name: Set Artifact Traits
+      run: |
+        if ${{ inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
+          echo "ARTIFACT_TRAITS=rnef-ios-${{ inputs.destination }}-${{ inputs.configuration }}-${{ env.FINGERPRINT }}-${{ github.event.pull_request.number}}" >> $GITHUB_ENV
+        else
+          echo "ARTIFACT_TRAITS=rnef-ios-${{ inputs.destination }}-${{ inputs.configuration }}-${{ env.FINGERPRINT }}" >> $GITHUB_ENV
+        fi
       shell: bash
 
     - name: Find artifact URL
       id: find-artifact
-      uses: callstackincubator/ios/.github/actions/find-artifact@v1
-      with:
-        name: ${{ env.ARTIFACT_NAME }}
-        re-sign: ${{ inputs.re-sign }}
-        github-token: ${{ inputs.github-token }}
-        pr-number: ${{ github.event.pull_request.number }}
+      run: |
+        OUTPUT=$(npx rnef remote-cache list -p ios --traits $ARTIFACT_TRAITS --json)
+        if ${{ inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
+          echo "ARTIFACT_TRAITS=rnef-ios-${{ inputs.destination }}-${{ inputs.configuration }}-${{ env.FINGERPRINT }}-${{ github.event.pull_request.number}}" >> $GITHUB_ENV
+        else
+          echo "ARTIFACT_TRAITS=rnef-ios-${{ inputs.destination }}-${{ inputs.configuration }}-${{ env.FINGERPRINT }}" >> $GITHUB_ENV
+        fi
+        echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
+        echo "ARTIFACT_ID=$(echo "$OUTPUT" | jq -r '.id')" >> $GITHUB_ENV
+        echo "ARTIFACT_NAME=rnef-ios-$ARTIFACT_TRAITS" >> $GITHUB_ENV
+      shell: bash
+      output:
+        artifact-url: ${{ env.ARTIFACT_URL }}
+        artifact-id: ${{ env.ARTIFACT_ID }}
 
     - name: Set Provisioning Profile Path
       run: |
@@ -198,18 +211,7 @@ runs:
     - name: Download and Unpack IPA
       if: ${{ steps.find-artifact.outputs.artifact-url && inputs.destination == 'device' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
       run: |
-        curl -L -H "Authorization: token ${{ inputs.github-token }}" \
-          -o artifact.zip \
-          "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/${{ steps.find-artifact.outputs.artifact-id }}/zip"
-
-        unzip artifact.zip -d downloaded-artifacts
-        ls -l downloaded-artifacts
-
-        IPA_PATH=$(find downloaded-artifacts -name "*.ipa" -print -quit)
-        if [ -z "$IPA_PATH" ]; then
-          echo "No IPA file found in the extracted contents."
-          exit 1
-        fi
+        IPA_PATH=$(npx rnef remote-cache download -p ios --traits $ARTIFACT_TRAITS --json)
         echo "ARTIFACT_PATH=$IPA_PATH" >> $GITHUB_ENV
       shell: bash
 
@@ -225,12 +227,16 @@ runs:
     # Find artifact URL again before uploading, as other concurrent workflows could upload the same artifact
     - name: Find artifact URL again before uploading
       id: find-artifact-after-build
-      uses: callstackincubator/ios/.github/actions/find-artifact@v1
-      with:
-        name: ${{ env.ARTIFACT_NAME }}
-        re-sign: ${{ inputs.re-sign }}
-        github-token: ${{ inputs.github-token }}
-        pr-number: ${{ github.event.pull_request.number }}
+      run: |
+        OUTPUT=$(npx rnef remote-cache list -p ios --traits $ARTIFACT_TRAITS --json)
+        echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
+        echo "ARTIFACT_ID=$(echo "$OUTPUT" | jq -r '.id')" >> $GITHUB_ENV
+        echo "ARTIFACT_NAME=$(echo "$OUTPUT" | jq -r '.name')" >> $GITHUB_ENV
+      shell: bash
+      output:
+        artifact-url: ${{ env.ARTIFACT_URL }}
+        artifact-id: ${{ env.ARTIFACT_ID }}
+        artifact-name: ${{ env.ARTIFACT_NAME }}
 
     - name: Upload Artifact
       id: upload-artifact
@@ -244,11 +250,7 @@ runs:
     - name: Delete Old Re-Signed Artifacts
       if: ${{ steps.find-artifact-after-build.outputs.artifact-url && inputs.destination == 'device' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
       run: |
-        for ID in ${{ steps.find-artifact-after-build.outputs.artifact-ids }}; do
-          echo "Deleting artifact with ID: $ID"
-          curl -X DELETE -H "Authorization: token ${{ inputs.github-token }}" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/$ID"
-        done
+        npx rnef remote-cache delete -p ios --traits $ARTIFACT_TRAITS --json
       shell: bash
 
     - name: Clean Up Code Signing (device builds only)
