@@ -98,22 +98,26 @@ runs:
     - name: Native Fingerprint
       id: fingerprint
       run: |
-        FINGERPRINT=$(npx rnef fingerprint -p ios --raw --verbose)
+        FINGERPRINT=$(npx rnef fingerprint -p ios --verbose | grep -oE '[a-f0-9]{40}')
         echo $FINGERPRINT
       shell: bash
       working-directory: ${{ inputs.working-directory }}
 
-    - name: Find artifact URL
+    - name: Set Artifact Traits
       run: |
         if ${{ inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
-          echo "ARTIFACT_TRAITS=${{ inputs.destination }}-${{ inputs.configuration }}-${{ env.FINGERPRINT }}-${{ github.event.pull_request.number}}" >> $GITHUB_ENV
+          echo "ARTIFACT_TRAITS=${{ inputs.destination }},${{ inputs.configuration }},${{ env.FINGERPRINT }},${{ github.event.pull_request.number}}" >> $GITHUB_ENV
         else
-          echo "ARTIFACT_TRAITS=${{ inputs.destination }}-${{ inputs.configuration }}-${{ env.FINGERPRINT }}" >> $GITHUB_ENV
+          echo "ARTIFACT_TRAITS=${{ inputs.destination }},${{ inputs.configuration }},${{ env.FINGERPRINT }}" >> $GITHUB_ENV
         fi
-        OUTPUT=$(npx rnef remote-cache list -p ios --traits $ARTIFACT_TRAITS --json)
+        # Transform commas to hyphens
+        ARTIFACT_TRAITS_HYPHENATED=$(echo "$ARTIFACT_TRAITS" | tr ',' '-')
+        echo "ARTIFACT_TRAITS_HYPHENATED=$ARTIFACT_TRAITS_HYPHENATED" >> $GITHUB_ENV
+        OUTPUT=$(npx rnef remote-cache list -p ios --traits "$ARTIFACT_TRAITS" --json)
+      
         echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
         echo "ARTIFACT_ID=$(echo "$OUTPUT" | jq -r '.id')" >> $GITHUB_ENV
-        echo "ARTIFACT_NAME=rnef-ios-$ARTIFACT_TRAITS" >> $GITHUB_ENV
+        echo "ARTIFACT_NAME=rnef-ios-$ARTIFACT_TRAITS_HYPHENATED" >> $GITHUB_ENV
       shell: bash
 
     - name: Set Provisioning Profile Path
@@ -198,7 +202,7 @@ runs:
     - name: Download and Unpack IPA
       if: ${{ env.ARTIFACT_URL && inputs.destination == 'device' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
       run: |
-        IPA_PATH=$(npx rnef remote-cache download -p ios --traits $ARTIFACT_TRAITS --json)
+        IPA_PATH=$(npx rnef remote-cache download -p ios --traits "$ARTIFACT_TRAITS" --json)
         echo "ARTIFACT_PATH=$IPA_PATH" >> $GITHUB_ENV
       shell: bash
 
@@ -214,10 +218,10 @@ runs:
     # Find artifact URL again before uploading, as other concurrent workflows could upload the same artifact
     - name: Find artifact URL again before uploading
       run: |
-        OUTPUT=$(npx rnef remote-cache list -p ios --traits $ARTIFACT_TRAITS --json)
+        OUTPUT=$(npx rnef remote-cache list -p ios --traits "$ARTIFACT_TRAITS" --json)
         echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
         echo "ARTIFACT_ID=$(echo "$OUTPUT" | jq -r '.id')" >> $GITHUB_ENV
-        echo "ARTIFACT_NAME=rnef-ios-$ARTIFACT_TRAITS" >> $GITHUB_ENV
+        echo "ARTIFACT_NAME=rnef-ios-$ARTIFACT_TRAITS_HYPHENATED" >> $GITHUB_ENV
       shell: bash
 
     - name: Upload Artifact
