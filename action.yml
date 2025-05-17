@@ -105,7 +105,7 @@ runs:
 
     - name: Set Artifact Traits
       run: |
-        if ${{ inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
+        if [ "${{ inputs.re-sign }}" == "true" ] && [ "${{ github.event_name }}" == "pull_request" ]; then
           echo "ARTIFACT_TRAITS=${{ inputs.destination }},${{ inputs.configuration }},${{ github.event.pull_request.number}}" >> $GITHUB_ENV
         else
           echo "ARTIFACT_TRAITS=${{ inputs.destination }},${{ inputs.configuration }}" >> $GITHUB_ENV
