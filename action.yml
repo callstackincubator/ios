@@ -99,7 +99,7 @@ runs:
       id: fingerprint
       run: |
         FINGERPRINT_OUTPUT=$(npx rnef fingerprint -p ios --verbose)
-        echo $FINGERPRINT_OUTPUT
+        echo "$FINGERPRINT_OUTPUT"
         FINGERPRINT=$(echo "$FINGERPRINT_OUTPUT" | grep -oE '[a-f0-9]{40}')
         echo "FINGERPRINT=$FINGERPRINT" >> $GITHUB_ENV
       shell: bash
@@ -131,8 +131,8 @@ runs:
           echo "No artifact found"
         else
           # Transform commas to hyphens
-          ARTIFACT_TRAITS_HYPHENATED=$(echo "${ARTIFACT_TRAITS}" | tr ',' '-')
-          ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT=$ARTIFACT_TRAITS_HYPHENATED-$FINGERPRINT
+          ARTIFACT_TRAITS_HYPHENATED=$(echo "$ARTIFACT_TRAITS" | tr ',' '-')
+          ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT="${ARTIFACT_TRAITS_HYPHENATED}-${FINGERPRINT}"
           echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
           echo "ARTIFACT_ID=$(echo "$OUTPUT" | jq -r '.id')" >> $GITHUB_ENV
           echo "ARTIFACT_NAME=rnef-ios-$ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT" >> $GITHUB_ENV
