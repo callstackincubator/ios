@@ -118,11 +118,11 @@ runs:
 
         # Check if PR-related artifact existis
         OUTPUT=$(npx rnef remote-cache list -p ios --traits "${ARTIFACT_TRAITS_PR}" --json)
-        echo "ARTIFACT_TRAITS=$ARTIFACT_TRAITS_PR" >> $GITHUB_ENV
+        ARTIFACT_TRAITS=$ARTIFACT_TRAITS_PR
         # If PR-related artifact doesn't exist, check if for regular artifact
         if [ -z "$OUTPUT" ] || [ "$OUTPUT" = "undefined" ]; then
           OUTPUT=$(npx rnef remote-cache list -p ios --traits "${ARTIFACT_TRAITS_REGULAR}" --json)
-          echo "ARTIFACT_TRAITS=$ARTIFACT_TRAITS_REGULAR" >> $GITHUB_ENV
+          ARTIFACT_TRAITS=$ARTIFACT_TRAITS_REGULAR
         fi
         echo "$OUTPUT"
 
@@ -137,6 +137,7 @@ runs:
           echo "FINGERPRINT value: $FINGERPRINT"
           ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT="${ARTIFACT_TRAITS_HYPHENATED}-${FINGERPRINT}"
           echo "ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT value: $ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT"
+          echo "ARTIFACT_TRAITS=$ARTIFACT_TRAITS" >> $GITHUB_ENV
           echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
           echo "ARTIFACT_ID=$(echo "$OUTPUT" | jq -r '.id')" >> $GITHUB_ENV
           echo "ARTIFACT_NAME=rnef-ios-${ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT}" >> $GITHUB_ENV
