@@ -227,7 +227,7 @@ runs:
     - name: Download and Unpack IPA
       if: ${{ env.ARTIFACT_URL && inputs.destination == 'device' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
       run: |
-        DOWNLOAD_OUTPUT=$(npx rnef remote-cache download -p ios --name ${{ env.ARTIFACT_NAME }} --json)
+        DOWNLOAD_OUTPUT=$(npx rnef remote-cache download --name ${{ env.ARTIFACT_NAME }} --json)
         IPA_PATH=$(echo "$DOWNLOAD_OUTPUT" | jq -r '.path')
         echo "ARTIFACT_PATH=$IPA_PATH" >> $GITHUB_ENV
       shell: bash
@@ -244,7 +244,7 @@ runs:
     # Find artifact URL again before uploading, as other concurrent workflows could upload the same artifact
     - name: Find artifact URL again before uploading
       run: |
-        OUTPUT=$(npx rnef remote-cache list -p ios --name ${{ env.ARTIFACT_NAME }} --json)
+        OUTPUT=$(npx rnef remote-cache list --name ${{ env.ARTIFACT_NAME }} --json)
         if [ -z "$OUTPUT" ]; then
           echo "No artifact found"
         else
@@ -266,7 +266,7 @@ runs:
     # - name: Delete Old Re-Signed Artifacts
     #   if: ${{ env.ARTIFACT_URL && inputs.destination == 'device' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
     #   run: |
-    #     npx rnef remote-cache delete -p ios --name ${{ env.ARTIFACT_NAME }} --json
+    #     npx rnef remote-cache delete --name ${{ env.ARTIFACT_NAME }} --json
     #   shell: bash
 
     - name: Clean Up Code Signing (device builds only)
