@@ -264,11 +264,11 @@ runs:
         path: ${{ env.ARTIFACT_PATH }}
         if-no-files-found: error
 
-    # - name: Delete Old Re-Signed Artifacts
-    #   if: ${{ env.ARTIFACT_URL && inputs.destination == 'device' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
-    #   run: |
-    #     npx rnef remote-cache delete --name ${{ env.ARTIFACT_NAME }} --json
-    #   shell: bash
+    - name: Delete Old Re-Signed Artifacts
+      if: ${{ env.ARTIFACT_URL && inputs.destination == 'device' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
+      run: |
+        npx rnef remote-cache delete --name ${{ env.ARTIFACT_NAME }} --all-but-latest --json
+      shell: bash
 
     - name: Clean Up Code Signing (device builds only)
       if: ${{ !env.ARTIFACT_URL && inputs.destination == 'device' }}
