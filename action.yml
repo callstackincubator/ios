@@ -131,7 +131,7 @@ runs:
           echo "No artifact found"
         else
           # Transform commas to hyphens
-          ARTIFACT_TRAITS_HYPHENATED=$(echo "$ARTIFACT_TRAITS" | tr ',' '-')
+          ARTIFACT_TRAITS_HYPHENATED=$(echo "${ARTIFACT_TRAITS}" | tr ',' '-')
           ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT=$ARTIFACT_TRAITS_HYPHENATED-$FINGERPRINT
           echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
           echo "ARTIFACT_ID=$(echo "$OUTPUT" | jq -r '.id')" >> $GITHUB_ENV
