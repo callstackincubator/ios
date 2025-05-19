@@ -226,7 +226,8 @@ runs:
     - name: Download and Unpack IPA
       if: ${{ env.ARTIFACT_URL && inputs.destination == 'device' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
       run: |
-        IPA_PATH=$(npx rnef remote-cache download -p ios --traits "${ARTIFACT_TRAITS}" --json)
+        DOWNLOAD_OUTPUT=$(npx rnef remote-cache download -p ios --traits "${ARTIFACT_TRAITS}" --json)
+        IPA_PATH=$(echo "$DOWNLOAD_OUTPUT" | jq -r '.path')
         echo "ARTIFACT_PATH=$IPA_PATH" >> $GITHUB_ENV
       shell: bash
 
