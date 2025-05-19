@@ -111,25 +111,27 @@ runs:
         echo "{\"githubToken\": \"${{ inputs.github-token }}\"}" > .rnef/cache/project.json
       shell: bash
 
-    - name: Set Artifact Traits, URL and ID, Name (if available)
+    # We create PR-related artifacts to avoid overwriting the main artifact with new JS bundle
+    - name: Check if PR-related artifact exists
+      if: ${{ github.event_name == 'pull_request' && inputs.re-sign == 'true' }}
       run: |
-        ARTIFACT_TRAITS_PR="${{ inputs.destination }},${{ inputs.configuration }},${{ github.event.pull_request.number}}"
-        ARTIFACT_TRAITS_REGULAR="${{ inputs.destination }},${{ inputs.configuration }}"
-
-        # Check if PR-related artifact existis
-        OUTPUT=$(npx rnef remote-cache list -p ios --traits "${ARTIFACT_TRAITS_PR}" --json)
-        ARTIFACT_TRAITS=$ARTIFACT_TRAITS_PR
-        # If PR-related artifact doesn't exist, check if for regular artifact
-        if [ -z "$OUTPUT" ]; then
-          OUTPUT=$(npx rnef remote-cache list -p ios --traits "${ARTIFACT_TRAITS_REGULAR}" --json)
-          ARTIFACT_TRAITS=$ARTIFACT_TRAITS_REGULAR
+        ARTIFACT_TRAITS="${{ inputs.destination }},${{ inputs.configuration }},${{ github.event.pull_request.number}}"
+        OUTPUT=$(npx rnef remote-cache list -p ios --traits "${ARTIFACT_TRAITS}" --json)
+        if [ "$OUTPUT" ]; then
+          echo "ARTIFACT_TRAITS=$ARTIFACT_TRAITS" >> $GITHUB_ENV
+          echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
+          echo "ARTIFACT_ID=$(echo "$OUTPUT" | jq -r '.id')" >> $GITHUB_ENV
+          echo "ARTIFACT_NAME=$(echo "$OUTPUT" | jq -r '.name')" >> $GITHUB_ENV
         fi
-        echo "ARTIFACT_TRAITS=$ARTIFACT_TRAITS" >> $GITHUB_ENV
-        echo "$OUTPUT"
+      shell: bash
 
-        if [ -z "$OUTPUT" ]; then
-          echo "No artifact found"
-        else
+    - name: Check if regular artifact exists
+      if: ${{ !env.ARTIFACT_TRAITS }}
+      run: |
+        ARTIFACT_TRAITS="${{ inputs.destination }},${{ inputs.configuration }}"
+        OUTPUT=$(npx rnef remote-cache list -p ios --traits "${ARTIFACT_TRAITS}" --json)
+        if [ "$OUTPUT" ]; then
+          echo "ARTIFACT_TRAITS=$ARTIFACT_TRAITS" >> $GITHUB_ENV
           echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
           echo "ARTIFACT_ID=$(echo "$OUTPUT" | jq -r '.id')" >> $GITHUB_ENV
           echo "ARTIFACT_NAME=$(echo "$OUTPUT" | jq -r '.name')" >> $GITHUB_ENV
@@ -250,7 +252,6 @@ runs:
         else
           echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
           echo "ARTIFACT_ID=$(echo "$OUTPUT" | jq -r '.id')" >> $GITHUB_ENV
-          echo "ARTIFACT_NAME=$(echo "$OUTPUT" | jq -r '.name')" >> $GITHUB_ENV
         fi
       shell: bash
 
