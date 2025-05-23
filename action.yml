@@ -116,9 +116,10 @@ runs:
       if: ${{ github.event_name == 'pull_request' && inputs.re-sign == 'true' }}
       run: |
         ARTIFACT_TRAITS="${{ inputs.destination }},${{ inputs.configuration }},${{ github.event.pull_request.number}}"
+        echo "ARTIFACT_TRAITS=$ARTIFACT_TRAITS" >> $GITHUB_ENV
+
         OUTPUT=$(npx rnef remote-cache list -p ios --traits "${ARTIFACT_TRAITS}" --json)
         if [ "$OUTPUT" ]; then
-          echo "ARTIFACT_TRAITS=$ARTIFACT_TRAITS" >> $GITHUB_ENV
           echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
           echo "ARTIFACT_ID=$(echo "$OUTPUT" | jq -r '.id')" >> $GITHUB_ENV
           echo "ARTIFACT_NAME=$(echo "$OUTPUT" | jq -r '.name')" >> $GITHUB_ENV
@@ -129,9 +130,10 @@ runs:
       if: ${{ !env.ARTIFACT_TRAITS }}
       run: |
         ARTIFACT_TRAITS="${{ inputs.destination }},${{ inputs.configuration }}"
+        echo "ARTIFACT_TRAITS=$ARTIFACT_TRAITS" >> $GITHUB_ENV
+
         OUTPUT=$(npx rnef remote-cache list -p ios --traits "${ARTIFACT_TRAITS}" --json)
         if [ "$OUTPUT" ]; then
-          echo "ARTIFACT_TRAITS=$ARTIFACT_TRAITS" >> $GITHUB_ENV
           echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
           echo "ARTIFACT_ID=$(echo "$OUTPUT" | jq -r '.id')" >> $GITHUB_ENV
           echo "ARTIFACT_NAME=$(echo "$OUTPUT" | jq -r '.name')" >> $GITHUB_ENV
@@ -267,7 +269,7 @@ runs:
     - name: Delete Old Re-Signed Artifacts
       if: ${{ env.ARTIFACT_URL && inputs.destination == 'device' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
       run: |
-        npx rnef remote-cache delete --name ${{ env.ARTIFACT_NAME }} --all-but-latest --json
+        npx rnef remote-cache delete --name ${{ env.ARTIFACT_NAME }} --all-but-latest` --json
       shell: bash
 
     - name: Clean Up Code Signing (device builds only)
