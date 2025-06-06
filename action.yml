@@ -105,7 +105,15 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working-directory }}
 
+    - name: Get Provider Name
+      run: |
+        PROVIDER_NAME=$(npx rnef remote-cache get-provider-name)
+        echo "PROVIDER_NAME=$PROVIDER_NAME" >> $GITHUB_ENV
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+
     - name: Populate GitHub Token in Cache
+      if: ${{ env.PROVIDER_NAME === "GitHub" }}
       run: |
         mkdir -p .rnef/cache
         echo "{\"githubToken\": \"${{ inputs.github-token }}\"}" > .rnef/cache/project.json
@@ -257,14 +265,21 @@ runs:
         fi
       shell: bash
 
-    - name: Upload Artifact
+    # Special case for GitHub, as it doesn't support uploading through the API
+    - name: Upload Artifact to GitHub
       id: upload-artifact
-      if: ${{ !env.ARTIFACT_URL || (inputs.re-sign == 'true' && github.event_name == 'pull_request') }}
+      if: ${{ env.PROVIDER_NAME === "GitHub" && (!env.ARTIFACT_URL || (inputs.re-sign == 'true' && github.event_name == 'pull_request')) }}
       uses: actions/upload-artifact@v4
       with:
         name: ${{ env.ARTIFACT_NAME }}
         path: ${{ env.ARTIFACT_PATH }}
         if-no-files-found: error
+
+    - name: Upload Artifact to Remote Cache
+      if: ${{ env.PROVIDER_NAME !== "GitHub" && (!env.ARTIFACT_URL || (inputs.re-sign == 'true' && github.event_name == 'pull_request')) }}
+      run: |
+        npx rnef remote-cache upload --name ${{ env.ARTIFACT_NAME }}
+      shell: bash
 
     - name: Delete Old Re-Signed Artifacts
       if: ${{ env.ARTIFACT_URL && inputs.destination == 'device' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
