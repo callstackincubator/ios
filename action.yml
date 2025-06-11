@@ -135,7 +135,7 @@ runs:
       shell: bash
 
     - name: Check if regular artifact exists
-      if: ${{ !env.ARTIFACT_TRAITS }}
+      if: ${{ !env.ARTIFACT_NAME }}
       run: |
         ARTIFACT_TRAITS="${{ inputs.destination }},${{ inputs.configuration }}"
         echo "ARTIFACT_TRAITS=$ARTIFACT_TRAITS" >> $GITHUB_ENV
