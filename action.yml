@@ -275,8 +275,15 @@ runs:
         path: ${{ env.ARTIFACT_PATH }}
         if-no-files-found: error
 
-    - name: Upload Artifact to Remote Cache
-      if: ${{ env.PROVIDER_NAME != 'GitHub' && (!env.ARTIFACT_URL || (inputs.re-sign == 'true' && github.event_name == 'pull_request')) }}
+    - name: Upload Artifact to Remote Cache for re-signed builds
+      if: ${{ env.PROVIDER_NAME != 'GitHub' && (inputs.re-sign == 'true' && github.event_name == 'pull_request') }}
+      run: |
+        OUTPUT=$(npx rnef remote-cache upload --name ${{ env.ARTIFACT_NAME }} --binary-path ${{ env.ARTIFACT_PATH }} --json --verbose)
+        echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Upload Artifact to Remote Cache for regular builds
+      if: ${{ env.PROVIDER_NAME != 'GitHub' && !env.ARTIFACT_URL }}
       run: |
         OUTPUT=$(npx rnef remote-cache upload --name ${{ env.ARTIFACT_NAME }} --json --verbose)
         echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
