@@ -24,7 +24,7 @@ inputs:
     description: Xcode configuration
     required: true
   re-sign:
-    description: Re-sign the app bundle with new JS bundle
+    description: Re-sign IPA with new JS bundle. No signing is done for APP bundle (destination == simulator).
     required: false
   certificate-base64:
     description: '[Device Builds] Base64 encoded P12 file containing Apple certificate (incl. private key)'
@@ -211,7 +211,7 @@ runs:
           --build-folder build \
           --destination ${{ inputs.destination }} \
           --verbose \
-          ${{ inputs.rnef-build-extra-params }} 
+          ${{ inputs.rnef-build-extra-params }}
       shell: bash
       working-directory: ${{ inputs.working-directory }}
 
@@ -249,6 +249,16 @@ runs:
         npx rnef sign:ios ${{ env.ARTIFACT_PATH }} \
           --build-jsbundle \
           --identity ${{ env.IDENTITY }}
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+
+    - name: Re-bundle APP
+      if: ${{ env.ARTIFACT_URL && inputs.destination == 'simulator' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
+      run: |
+        npx rnef sign:ios ${{ env.ARTIFACT_PATH }} \
+          --build-jsbundle \
+          --identity ${{ env.IDENTITY }} \
+          --app
       shell: bash
       working-directory: ${{ inputs.working-directory }}
 
