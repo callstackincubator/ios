@@ -251,9 +251,9 @@ runs:
         APP_DIR=$(dirname "$APP_PATH")
         APP_BASENAME=$(basename "$APP_PATH")
 
-        ARTIFACT_PATH="$APP_DIR/app.tar.gz"
-        tar -C "$APP_DIR" -czvf "$ARTIFACT_PATH" "$APP_BASENAME"
-
+        tar -C "$APP_DIR" -xzf "$APP_PATH"
+        EXTRACTED_APP=$(find "$APP_DIR" -name "*.app" -type d | head -1)
+        ARTIFACT_PATH="$EXTRACTED_APP"
         echo "ARTIFACT_PATH=$ARTIFACT_PATH" >> $GITHUB_ENV
       shell: bash
 
