@@ -161,7 +161,7 @@ runs:
       shell: bash
 
     - name: Setup Code Signing (device builds only)
-      if: ${{ inputs.re-sign == 'true' || (!env.ARTIFACT_URL && inputs.destination == 'device') }}
+      if: ${{ inputs.re-sign == 'true' && inputs.destination == 'device' || (!env.ARTIFACT_URL && inputs.destination == 'device') }}
       run: |
         # Create temporary keychain
         KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
@@ -257,7 +257,6 @@ runs:
       run: |
         npx rnef sign:ios ${{ env.ARTIFACT_PATH }} \
           --build-jsbundle \
-          --identity ${{ env.IDENTITY }} \
           --app
       shell: bash
       working-directory: ${{ inputs.working-directory }}
@@ -299,7 +298,7 @@ runs:
       shell: bash
 
     - name: Delete Old Re-Signed Artifacts
-      if: ${{ env.ARTIFACT_URL && inputs.destination == 'device' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
+      if: ${{ env.ARTIFACT_URL && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
       run: |
         npx rnef remote-cache delete --name ${{ env.ARTIFACT_NAME }} --all-but-latest --json
       shell: bash
