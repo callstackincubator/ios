@@ -253,8 +253,9 @@ runs:
 
         tar -C "$APP_DIR" -xzf "$APP_PATH"
         EXTRACTED_APP=$(find "$APP_DIR" -name "*.app" -type d | head -1)
-        ARTIFACT_PATH="$EXTRACTED_APP"
-        echo "ARTIFACT_PATH=$ARTIFACT_PATH" >> $GITHUB_ENV
+
+        echo "ARTIFACT_PATH=$APP_PATH" >> $GITHUB_ENV
+        echo "ARTIFACT_TAR_PATH=$EXTRACTED_APP" >> $GITHUB_ENV
       shell: bash
 
     - name: Re-sign IPA
@@ -269,7 +270,7 @@ runs:
     - name: Re-bundle APP
       if: ${{ env.ARTIFACT_URL && inputs.destination == 'simulator' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
       run: |
-        npx rnef sign:ios ${{ env.ARTIFACT_PATH }} \
+        npx rnef sign:ios ${{ env.ARTIFACT_TAR_PATH }} \
           --build-jsbundle \
           --app
       shell: bash
@@ -282,6 +283,7 @@ runs:
         ARTIFACT_TRAITS_HYPHENATED=$(echo "$ARTIFACT_TRAITS" | tr ',' '-')
         ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT="${ARTIFACT_TRAITS_HYPHENATED}-${FINGERPRINT}"
         echo "ARTIFACT_NAME=rnef-ios-${ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT}" >> $GITHUB_ENV
+        echo "ARTIFACT_TRAITS=$ARTIFACT_TRAITS" >> $GITHUB_ENV
       shell: bash
 
     # Find artifact URL again before uploading, as other concurrent workflows could upload the same artifact
