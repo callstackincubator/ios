@@ -275,6 +275,15 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working-directory }}
 
+    - name: Update Artifact Name for re-signed builds
+      if: ${{ github.event_name == 'pull_request' && inputs.re-sign == 'true' }}
+      run: |
+        ARTIFACT_TRAITS="${{ inputs.destination }},${{ inputs.configuration }},${{ github.event.pull_request.number}}"
+        ARTIFACT_TRAITS_HYPHENATED=$(echo "$ARTIFACT_TRAITS" | tr ',' '-')
+        ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT="${ARTIFACT_TRAITS_HYPHENATED}-${FINGERPRINT}"
+        echo "ARTIFACT_NAME=rnef-ios-${ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT}" >> $GITHUB_ENV
+      shell: bash
+
     # Find artifact URL again before uploading, as other concurrent workflows could upload the same artifact
     - name: Find artifact URL again before uploading
       run: |
