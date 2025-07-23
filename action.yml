@@ -243,6 +243,20 @@ runs:
         echo "ARTIFACT_PATH=$IPA_PATH" >> $GITHUB_ENV
       shell: bash
 
+    - name: Download and Unpack APP
+      if: ${{ env.ARTIFACT_URL && inputs.destination == 'simulator' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
+      run: |
+        DOWNLOAD_OUTPUT=$(npx rnef remote-cache download --name ${{ env.ARTIFACT_NAME }} --json)
+        APP_PATH=$(echo "$DOWNLOAD_OUTPUT" | jq -r '.path')
+        APP_DIR=$(dirname "$APP_PATH")
+        APP_BASENAME=$(basename "$APP_PATH")
+
+        ARTIFACT_PATH="$APP_DIR/app.tar.gz"
+        tar -C "$APP_DIR" -czvf "$ARTIFACT_PATH" "$APP_BASENAME"
+
+        echo "ARTIFACT_PATH=$ARTIFACT_PATH" >> $GITHUB_ENV
+      shell: bash
+
     - name: Re-sign IPA
       if: ${{ env.ARTIFACT_URL && inputs.destination == 'device' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
       run: |
