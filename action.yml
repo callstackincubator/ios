@@ -98,7 +98,7 @@ runs:
     - name: Native Fingerprint
       id: fingerprint
       run: |
-        FINGERPRINT_OUTPUT=$(npx rnef fingerprint -p ios --raw 2>&1) || (echo "$FINGERPRINT_OUTPUT" && exit 1)
+        FINGERPRINT_OUTPUT=$(npx rnef fingerprint -p ios --raw)
         echo "FINGERPRINT=$FINGERPRINT_OUTPUT" >> $GITHUB_ENV
       shell: bash
       working-directory: ${{ inputs.working-directory }}
