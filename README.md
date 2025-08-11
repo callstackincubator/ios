@@ -40,25 +40,28 @@ jobs:
           # provisioning-profile-base64: ${{ secrets.PROVISIONING_PROFILE_BASE64 }}
           # provisioning-profile-name: 'YourProfileName'
           # keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
+          # re-sign: true
+          # ad-hoc: true
 ```
 
 ## Inputs
 
-| Input                         | Description                                | Required | Default               |
-| ----------------------------- | ------------------------------------------ | -------- | --------------------- |
-| `github-token`                | GitHub Token                               | Yes      | -                     |
-| `working-directory`           | Working directory for the build command    | No       | `.`                   |
-| `destination`                 | Build destination: "simulator" or "device" | Yes      | `simulator`           |
-| `scheme`                      | Xcode scheme                               | Yes      | -                     |
-| `configuration`               | Xcode configuration                        | Yes      | -                     |
-| `re-sign`                     | Re-sign the app bundle with new JS bundle  | No       | `false`               |
-| `certificate-base64`          | Base64 encoded P12 file for device builds  | No       | -                     |
-| `certificate-password`        | Password for the P12 file                  | No       | -                     |
-| `provisioning-profile-base64` | Base64 encoded provisioning profile        | No       | -                     |
-| `provisioning-profile-name`   | Name of the provisioning profile           | No       | -                     |
-| `keychain-password`           | Password for temporary keychain            | No       | -                     |
-| `rnef-build-extra-params`     | Extra parameters for rnef build:ios        | No       | -                     |
-| `comment-bot`                 | Whether to comment PR with build link      | No       | `true`                |
+| Input                         | Description                                                                     | Required | Default     |
+| ----------------------------- | ------------------------------------------------------------------------------- | -------- | ----------- |
+| `github-token`                | GitHub Token                                                                    | Yes      | -           |
+| `working-directory`           | Working directory for the build command                                         | No       | `.`         |
+| `destination`                 | Build destination: "simulator" or "device"                                      | Yes      | `simulator` |
+| `scheme`                      | Xcode scheme                                                                    | Yes      | -           |
+| `configuration`               | Xcode configuration                                                             | Yes      | -           |
+| `re-sign`                     | Re-sign the app bundle with new JS bundle                                       | No       | `false`     |
+| `ad-hoc`                      | Upload the IPA for ad-hoc distribution to easily install on provisioned devices | No       | `false`     |
+| `certificate-base64`          | Base64 encoded P12 file for device builds                                       | No       | -           |
+| `certificate-password`        | Password for the P12 file                                                       | No       | -           |
+| `provisioning-profile-base64` | Base64 encoded provisioning profile                                             | No       | -           |
+| `provisioning-profile-name`   | Name of the provisioning profile                                                | No       | -           |
+| `keychain-password`           | Password for temporary keychain                                                 | No       | -           |
+| `rnef-build-extra-params`     | Extra parameters for rnef build:ios                                             | No       | -           |
+| `comment-bot`                 | Whether to comment PR with build link                                           | No       | `true`      |
 
 ## Outputs
 
