@@ -26,6 +26,10 @@ inputs:
   re-sign:
     description: Re-sign IPA with new JS bundle. No signing is done for APP bundle (destination == simulator).
     required: false
+  ad-hoc:
+    description: 'Whether to upload the artifact as ad-hoc'
+    required: false
+    default: false
   certificate-base64:
     description: '[Device Builds] Base64 encoded P12 file containing Apple certificate (incl. private key)'
     required: false
@@ -311,14 +315,21 @@ runs:
     - name: Upload Artifact to Remote Cache for re-signed builds
       if: ${{ env.PROVIDER_NAME != 'GitHub' && (inputs.re-sign == 'true' && github.event_name == 'pull_request') }}
       run: |
-        OUTPUT=$(npx rnef remote-cache upload --name ${{ env.ARTIFACT_NAME }} --binary-path ${{ env.ARTIFACT_PATH }} --json --verbose)
+        OUTPUT=$(npx rnef remote-cache upload --name ${{ env.ARTIFACT_NAME }} --binary-path ${{ env.ARTIFACT_PATH }} --json)
         echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
       shell: bash
 
     - name: Upload Artifact to Remote Cache for regular builds
       if: ${{ env.PROVIDER_NAME != 'GitHub' && !env.ARTIFACT_URL }}
       run: |
-        OUTPUT=$(npx rnef remote-cache upload --name ${{ env.ARTIFACT_NAME }} --json --verbose)
+        OUTPUT=$(npx rnef remote-cache upload --name ${{ env.ARTIFACT_NAME }} --json)
+        echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Upload for Ad-hoc distribution
+      if: ${{ env.PROVIDER_NAME != 'GitHub' && inputs.ad-hoc == 'true' }}
+      run: |
+        OUTPUT=$(npx rnef remote-cache upload --name ${{ env.ARTIFACT_NAME }} --json --ad-hoc)
         echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
       shell: bash
 
