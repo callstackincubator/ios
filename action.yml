@@ -27,7 +27,7 @@ inputs:
     description: Re-sign IPA with new JS bundle. No signing is done for APP bundle (destination == simulator).
     required: false
   ad-hoc:
-    description: 'Whether to upload the artifact as ad-hoc'
+    description: 'Upload the IPA for ad-hoc distribution to easily install on provisioned devices'
     required: false
     default: false
   certificate-base64:
