@@ -1,6 +1,6 @@
-# RNEF iOS GitHub Action
+# Rock iOS GitHub Action
 
-This GitHub Action enables remote building of iOS applications using RNEF (React Native Enterprise Framework). It supports both simulator and device builds, with automatic artifact caching and code signing capabilities.
+This GitHub Action enables remote building of iOS applications using [Rock](https://rockjs.dev). It supports both simulator and device builds, with automatic artifact caching and code signing capabilities.
 
 ## Features
 
@@ -60,7 +60,7 @@ jobs:
 | `provisioning-profile-base64` | Base64 encoded provisioning profile                                             | No       | -           |
 | `provisioning-profile-name`   | Name of the provisioning profile                                                | No       | -           |
 | `keychain-password`           | Password for temporary keychain                                                 | No       | -           |
-| `rnef-build-extra-params`     | Extra parameters for rnef build:ios                                             | No       | -           |
+| `rock-build-extra-params`     | Extra parameters for rock build:ios                                             | No       | -           |
 | `comment-bot`                 | Whether to comment PR with build link                                           | No       | `true`      |
 
 ## Outputs
@@ -73,7 +73,7 @@ jobs:
 ## Prerequisites
 
 - macOS runner
-- RNEF CLI installed in your project
+- Rock CLI installed in your project
 - For device builds:
   - Valid Apple Developer certificate
   - Valid provisioning profile

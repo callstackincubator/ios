@@ -1,5 +1,5 @@
 name: 'Remote Build - iOS'
-description: 'Github implementation of the RNEF Remote Build for iOS'
+description: 'Github implementation of the Rock Remote Build for iOS'
 
 branding:
   icon: 'box'
@@ -14,7 +14,7 @@ inputs:
     required: false
     default: '.'
   destination:
-    description: 'Destination to build to: "simulator" or "device". Using "device" runs "rnef build:ios --archive" and code signing settings (certificate, provisioning profile, keychain password) are required.'
+    description: 'Destination to build to: "simulator" or "device". Using "device" runs "rock build:ios --archive" and code signing settings (certificate, provisioning profile, keychain password) are required.'
     required: true
     default: 'simulator' # 'simulator' or 'device'
   scheme:
@@ -45,8 +45,8 @@ inputs:
   keychain-password:
     description: '[Device Builds] Password that will protect temporary keychain used for signing (can be a random string)'
     required: false
-  rnef-build-extra-params:
-    description: 'Extra parameters to pass to "rnef build:ios"'
+  rock-build-extra-params:
+    description: 'Extra parameters to pass to "rock build:ios"'
     required: false
   comment-bot:
     description: 'Whether to send a comment under PR with the link to the generated build'
@@ -102,14 +102,14 @@ runs:
     - name: Native Fingerprint
       id: fingerprint
       run: |
-        FINGERPRINT_OUTPUT=$(npx rnef fingerprint -p ios --raw)
+        FINGERPRINT_OUTPUT=$(npx rock fingerprint -p ios --raw)
         echo "FINGERPRINT=$FINGERPRINT_OUTPUT" >> $GITHUB_ENV
       shell: bash
       working-directory: ${{ inputs.working-directory }}
 
     - name: Get Provider Name
       run: |
-        PROVIDER_NAME=$(npx rnef remote-cache get-provider-name)
+        PROVIDER_NAME=$(npx rock remote-cache get-provider-name)
         echo "PROVIDER_NAME=$PROVIDER_NAME" >> $GITHUB_ENV
       shell: bash
       working-directory: ${{ inputs.working-directory }}
@@ -117,8 +117,8 @@ runs:
     - name: Populate GitHub Token in Cache
       if: ${{ env.PROVIDER_NAME == 'GitHub' }}
       run: |
-        mkdir -p .rnef/cache
-        echo "{\"githubToken\": \"${{ inputs.github-token }}\"}" > .rnef/cache/project.json
+        mkdir -p .rock/cache
+        echo "{\"githubToken\": \"${{ inputs.github-token }}\"}" > .rock/cache/project.json
       shell: bash
 
     # We create PR-related artifacts to avoid overwriting the main artifact with new JS bundle
@@ -128,7 +128,7 @@ runs:
         ARTIFACT_TRAITS="${{ inputs.destination }},${{ inputs.configuration }},${{ github.event.pull_request.number}}"
         echo "ARTIFACT_TRAITS=$ARTIFACT_TRAITS" >> $GITHUB_ENV
 
-        OUTPUT=$(npx rnef remote-cache list -p ios --traits "${ARTIFACT_TRAITS}" --json)
+        OUTPUT=$(npx rock remote-cache list -p ios --traits "${ARTIFACT_TRAITS}" --json)
         if [ "$OUTPUT" ]; then
           echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
           echo "ARTIFACT_ID=$(echo "$OUTPUT" | jq -r '.id')" >> $GITHUB_ENV
@@ -142,7 +142,7 @@ runs:
         ARTIFACT_TRAITS="${{ inputs.destination }},${{ inputs.configuration }}"
         echo "ARTIFACT_TRAITS=$ARTIFACT_TRAITS" >> $GITHUB_ENV
 
-        OUTPUT=$(npx rnef remote-cache list -p ios --traits "${ARTIFACT_TRAITS}" --json)
+        OUTPUT=$(npx rock remote-cache list -p ios --traits "${ARTIFACT_TRAITS}" --json)
         if [ "$OUTPUT" ]; then
           echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
           echo "ARTIFACT_ID=$(echo "$OUTPUT" | jq -r '.id')" >> $GITHUB_ENV
@@ -156,7 +156,7 @@ runs:
         # Transform commas to hyphens
         ARTIFACT_TRAITS_HYPHENATED=$(echo "$ARTIFACT_TRAITS" | tr ',' '-')
         ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT="${ARTIFACT_TRAITS_HYPHENATED}-${FINGERPRINT}"
-        echo "ARTIFACT_NAME=rnef-ios-${ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT}" >> $GITHUB_ENV
+        echo "ARTIFACT_NAME=rock-ios-${ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT}" >> $GITHUB_ENV
       shell: bash
 
     - name: Set Provisioning Profile Path
@@ -198,7 +198,7 @@ runs:
     - name: Determine iOS sourceDir
       if: ${{ !env.ARTIFACT_URL }}
       run: |
-        JSON_OUTPUT=$(npx rnef config -p ios)
+        JSON_OUTPUT=$(npx rock config -p ios)
         echo "$JSON_OUTPUT" | jq -r '.project'
         IOS_SOURCE_DIR=$(echo "$JSON_OUTPUT" | jq -r '.project.ios.sourceDir')
         echo "IOS_SOURCE_DIR=$IOS_SOURCE_DIR" >> $GITHUB_ENV
@@ -208,14 +208,14 @@ runs:
     - name: Build iOS
       if: ${{ !env.ARTIFACT_URL }}
       run: |
-        npx rnef build:ios \
+        npx rock build:ios \
           ${{ inputs.destination == 'device' && '--archive' || '' }} \
           --scheme "${{ inputs.scheme }}" \
           --configuration "${{ inputs.configuration }}" \
           --build-folder build \
           --destination ${{ inputs.destination }} \
           --verbose \
-          ${{ inputs.rnef-build-extra-params }}
+          ${{ inputs.rock-build-extra-params }}
       shell: bash
       working-directory: ${{ inputs.working-directory }}
 
@@ -223,7 +223,7 @@ runs:
       if: ${{ !env.ARTIFACT_URL }}
       run: |
         if [ "${{ inputs.destination }}" == "device" ]; then
-          IPA_PATH=$(find .rnef/cache/ios/export -maxdepth 1 -name '*.ipa' -type f | head -1)
+          IPA_PATH=$(find .rock/cache/ios/export -maxdepth 1 -name '*.ipa' -type f | head -1)
           echo IPA_PATH $IPA_PATH
           echo "ARTIFACT_PATH=$IPA_PATH" >> $GITHUB_ENV
         else
@@ -242,7 +242,7 @@ runs:
     - name: Download and Unpack IPA
       if: ${{ env.ARTIFACT_URL && inputs.destination == 'device' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
       run: |
-        DOWNLOAD_OUTPUT=$(npx rnef remote-cache download --name ${{ env.ARTIFACT_NAME }} --json)
+        DOWNLOAD_OUTPUT=$(npx rock remote-cache download --name ${{ env.ARTIFACT_NAME }} --json)
         IPA_PATH=$(echo "$DOWNLOAD_OUTPUT" | jq -r '.path')
         echo "ARTIFACT_PATH=$IPA_PATH" >> $GITHUB_ENV
       shell: bash
@@ -250,7 +250,7 @@ runs:
     - name: Download and Unpack APP
       if: ${{ env.ARTIFACT_URL && inputs.destination == 'simulator' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
       run: |
-        DOWNLOAD_OUTPUT=$(npx rnef remote-cache download --name ${{ env.ARTIFACT_NAME }} --json)
+        DOWNLOAD_OUTPUT=$(npx rock remote-cache download --name ${{ env.ARTIFACT_NAME }} --json)
         APP_PATH=$(echo "$DOWNLOAD_OUTPUT" | jq -r '.path')
         APP_DIR=$(dirname "$APP_PATH")
         APP_BASENAME=$(basename "$APP_PATH")
@@ -265,7 +265,7 @@ runs:
     - name: Re-sign IPA
       if: ${{ env.ARTIFACT_URL && inputs.destination == 'device' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
       run: |
-        npx rnef sign:ios ${{ env.ARTIFACT_PATH }} \
+        npx rock sign:ios ${{ env.ARTIFACT_PATH }} \
           --build-jsbundle \
           --identity ${{ env.IDENTITY }}
       shell: bash
@@ -274,7 +274,7 @@ runs:
     - name: Re-bundle APP
       if: ${{ env.ARTIFACT_URL && inputs.destination == 'simulator' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
       run: |
-        npx rnef sign:ios ${{ env.ARTIFACT_TAR_PATH }} \
+        npx rock sign:ios ${{ env.ARTIFACT_TAR_PATH }} \
           --build-jsbundle \
           --app
       shell: bash
@@ -286,14 +286,14 @@ runs:
         ARTIFACT_TRAITS="${{ inputs.destination }},${{ inputs.configuration }},${{ github.event.pull_request.number}}"
         ARTIFACT_TRAITS_HYPHENATED=$(echo "$ARTIFACT_TRAITS" | tr ',' '-')
         ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT="${ARTIFACT_TRAITS_HYPHENATED}-${FINGERPRINT}"
-        echo "ARTIFACT_NAME=rnef-ios-${ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT}" >> $GITHUB_ENV
+        echo "ARTIFACT_NAME=rock-ios-${ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT}" >> $GITHUB_ENV
         echo "ARTIFACT_TRAITS=$ARTIFACT_TRAITS" >> $GITHUB_ENV
       shell: bash
 
     # Find artifact URL again before uploading, as other concurrent workflows could upload the same artifact
     - name: Find artifact URL again before uploading
       run: |
-        OUTPUT=$(npx rnef remote-cache list --name ${{ env.ARTIFACT_NAME }} --json)
+        OUTPUT=$(npx rock remote-cache list --name ${{ env.ARTIFACT_NAME }} --json)
         if [ -z "$OUTPUT" ]; then
           echo "No artifact found"
         else
@@ -315,28 +315,28 @@ runs:
     - name: Upload Artifact to Remote Cache for re-signed builds
       if: ${{ env.PROVIDER_NAME != 'GitHub' && (inputs.re-sign == 'true' && github.event_name == 'pull_request') }}
       run: |
-        OUTPUT=$(npx rnef remote-cache upload --name ${{ env.ARTIFACT_NAME }} --binary-path ${{ env.ARTIFACT_PATH }} --json)
+        OUTPUT=$(npx rock remote-cache upload --name ${{ env.ARTIFACT_NAME }} --binary-path ${{ env.ARTIFACT_PATH }} --json)
         echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
       shell: bash
 
     - name: Upload Artifact to Remote Cache for regular builds
       if: ${{ env.PROVIDER_NAME != 'GitHub' && !env.ARTIFACT_URL }}
       run: |
-        OUTPUT=$(npx rnef remote-cache upload --name ${{ env.ARTIFACT_NAME }} --json)
+        OUTPUT=$(npx rock remote-cache upload --name ${{ env.ARTIFACT_NAME }} --json)
         echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
       shell: bash
 
     - name: Upload for Ad-hoc distribution
       if: ${{ env.PROVIDER_NAME != 'GitHub' && inputs.ad-hoc == 'true' }}
       run: |
-        OUTPUT=$(npx rnef remote-cache upload --name ${{ env.ARTIFACT_NAME }} --json --ad-hoc)
+        OUTPUT=$(npx rock remote-cache upload --name ${{ env.ARTIFACT_NAME }} --json --ad-hoc)
         echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
       shell: bash
 
     - name: Delete Old Re-Signed Artifacts
       if: ${{ env.ARTIFACT_URL && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
       run: |
-        npx rnef remote-cache delete --name ${{ env.ARTIFACT_NAME }} --all-but-latest --json
+        npx rock remote-cache delete --name ${{ env.ARTIFACT_NAME }} --all-but-latest --json
       shell: bash
 
     - name: Clean Up Code Signing (device builds only)
@@ -352,12 +352,12 @@ runs:
 
     - name: Cleanup Cache
       run: |
-        rm -rf .rnef/cache/project.json
+        rm -rf .rock/cache/project.json
       shell: bash
 
     - name: Post Build
       if: ${{ github.event_name == 'pull_request' && inputs.comment-bot == 'true' }}
-      uses: callstackincubator/ios/.github/actions/rnef-post-build@v2
+      uses: callstackincubator/ios/.github/actions/rock-post-build@v2
       with:
         title: iOS ${{ inputs.configuration }} ${{ inputs.destination == 'simulator' && 'APP for simulators' || 'IPA for physical devices' }}
         artifact-url: ${{ steps.upload-artifact.outputs.artifact-url || env.ARTIFACT_URL }}

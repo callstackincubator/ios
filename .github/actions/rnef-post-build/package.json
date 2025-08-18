@@ -1,7 +1,7 @@
 {
-  "name": "rnef-post-build",
+  "name": "rock-post-build",
   "version": "1.0.0",
-  "description": "Post build comment for RNEF builds",
+  "description": "Post build comment for Rock builds",
   "main": "index.js",
   "dependencies": {
     "@actions/core": "^1.11.1",

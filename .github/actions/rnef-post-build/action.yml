@@ -1,5 +1,5 @@
 name: 'Post Build'
-description: 'Post build comment for RNEF builds'
+description: 'Post build comment for Rock builds'
 
 inputs:
   artifact-url:
