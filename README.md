@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Build iOS
-        uses: callstackincubator/ios@v2 # replace with latest commit hash
+        uses: callstackincubator/ios@v3 # replace with latest commit hash
         with:
           destination: 'simulator' # or 'device'
           scheme: 'YourScheme'
