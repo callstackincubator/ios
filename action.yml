@@ -312,6 +312,8 @@ runs:
         path: ${{ env.ARTIFACT_PATH }}
         if-no-files-found: error
 
+    # For re-signed builds, the ARTIFACT_NAME may contain PR-number, while Rock will save the artifact without PR trait in its cache.
+    # We need to upload the artifact with the PR-number in the name, that's why we use --binary-path with appropriate ARTIFACT_PATH that accounts for it.
     - name: Upload Artifact to Remote Cache for re-signed builds
       if: ${{ env.PROVIDER_NAME != 'GitHub' && (inputs.re-sign == 'true' && github.event_name == 'pull_request') }}
       run: |
@@ -326,6 +328,8 @@ runs:
         echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
       shell: bash
 
+    # For ad-hoc builds, the ARTIFACT_NAME may contain PR-number, while Rock will save the artifact without PR trait in its cache.
+    # We need to upload the artifact with the PR-number in the name, that's why we use --binary-path with appropriate ARTIFACT_PATH that accounts for it.
     - name: Upload for Ad-hoc distribution
       if: ${{ env.PROVIDER_NAME != 'GitHub' && inputs.ad-hoc == 'true' }}
       run: |
