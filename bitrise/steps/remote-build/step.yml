@@ -1,0 +1,116 @@
+title: Rock Remote Build - iOS
+summary: Build iOS apps using Rock.
+description: |
+  This step builds iOS apps with Rock, optionally re-signing IPAs
+  for PRs or device builds. Supports simulator and device targets.
+website: https://github.com/callstackincubator/ios
+source_code_url: https://github.com/callstackincubator/ios/bitrise/steps/remote-build
+support_url: https://github.com/callstackincubator/ios/issues
+
+project_type_tags:
+  - ios
+  - react-native
+
+type_tags:
+  - build
+
+toolkit:
+  bash:
+    entry_file: step.sh
+
+deps:
+  brew:
+    - name: jq
+
+inputs:
+  - WORKING_DIRECTORY:
+      opts:
+        title: Working directory for the build
+        summary: Path where the build command should be run
+        description: Can be relative or absolute. Defaults to "."
+        is_required: false
+        is_expand: true
+        value: "."
+
+  - DESTINATION:
+      opts:
+        title: Destination for the build
+        summary: "Use 'simulator' or 'device'. Device builds require signing."
+        is_required: true
+        value: "simulator"
+
+  - SCHEME:
+      opts:
+        title: Xcode scheme
+        is_required: true
+        value: ""
+
+  - CONFIGURATION:
+      opts:
+        title: Xcode configuration
+        is_required: true
+        value: ""
+
+  - RE_SIGN:
+      opts:
+        title: Re-sign IPA with new JS bundle
+        summary: No signing is done for simulator builds
+        is_required: false
+        value: ""
+
+  - AD_HOC:
+      opts:
+        title: Upload IPA for ad-hoc distribution
+        is_required: false
+        value: "false"
+
+  - CERTIFICATE_BASE64:
+      opts:
+        title: Base64 encoded P12 file (device builds)
+        is_required: false
+        is_sensitive: true
+        value: ""
+
+  - CERTIFICATE_PASSWORD:
+      opts:
+        title: P12 password (device builds)
+        is_required: false
+        is_sensitive: true
+        value: ""
+
+  - PROVISIONING_PROFILE_BASE64:
+      opts:
+        title: Base64 encoded provisioning profile
+        is_required: false
+        is_sensitive: true
+        value: ""
+
+  - PROVISIONING_PROFILE_NAME:
+      opts:
+        title: Name of provisioning profile (without extension)
+        is_required: false
+        value: ""
+
+  - KEYCHAIN_PASSWORD:
+      opts:
+        title: Keychain password (device builds)
+        is_required: false
+        is_sensitive: true
+        value: ""
+
+  - ROCK_BUILD_EXTRA_PARAMS:
+      opts:
+        title: Extra parameters to pass to "rock build:ios"
+        is_required: false
+        value: ""
+
+outputs:
+  - ARTIFACT_URL:
+      opts:
+        title: URL of the built iOS artifact
+        summary: May be cached
+
+  - ARTIFACT_ID:
+      opts:
+        title: ID of the built iOS artifact
+        summary: May be cached
