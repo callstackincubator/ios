@@ -42,7 +42,7 @@ envman add --key PROFILE_DIR --value "$PROFILE_DIR"
 # Fingerprint
 pushd "$WORKING_DIRECTORY" >/dev/null
 log "Generating fingerprint"
-if ! FINGERPRINT_OUTPUT="$(npx rock fingerprint -p ios --raw 2>&1)"; then
+if ! FINGERPRINT_OUTPUT="$(npx rock fingerprint -p ios --raw)"; then
   echo "$FINGERPRINT_OUTPUT"
   fail "Fingerprint failed"
 fi
@@ -53,7 +53,7 @@ popd >/dev/null
 # Detect provider and fail early if GitHub (not supported from this Bitrise step)
 pushd "$WORKING_DIRECTORY" >/dev/null
 log "Detecting provider name"
-if ! PROVIDER_NAME="$(npx rock remote-cache get-provider-name 2>&1)"; then
+if ! PROVIDER_NAME="$(npx rock remote-cache get-provider-name)"; then
   echo "$PROVIDER_NAME"
   fail "remote-cache get-provider-name failed"
 fi
@@ -219,7 +219,6 @@ if { [ -z "${ARTIFACT_URL:-}" ] || { [ "$RE_SIGN" = "true" ] && [ "${BITRISE_GIT
     TARGET_PATH="$BITRISE_DEPLOY_DIR/$ARTIFACT_NAME"
     log "Copying artifact to Bitrise Deploy dir: $TARGET_PATH"
     cp "$ARTIFACT_PATH" "$TARGET_PATH"
-    # Optional outputs (like your Bitrise port)
     envman add --key UPLOAD_ARTIFACT_URL --value "${BITRISE_BUILD_URL:-}/artifacts"
     envman add --key UPLOAD_ARTIFACT_ID --value "bitrise-$ARTIFACT_NAME"
   fi
