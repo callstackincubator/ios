@@ -4,7 +4,7 @@ description: |
   This step builds iOS apps with Rock, optionally re-signing IPAs
   for PRs or device builds. Supports simulator and device targets.
 website: https://github.com/callstackincubator/ios
-source_code_url: https://github.com/callstackincubator/ios/bitrise/steps/remote-build
+source_code_url: https://github.com/callstackincubator/ios
 support_url: https://github.com/callstackincubator/ios/issues
 
 project_type_tags:

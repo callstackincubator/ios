@@ -1,49 +1,55 @@
-format_version: 11
+---
+format_version: '23'
 default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
-
+project_type: react-native
+meta:
+  bitrise.io:
+    stack: osx-xcode-16.4.x
+    machine_type_id: g2.mac.large
 workflows:
-  test-rock-remote-build-ios:
-    meta:
-      bitrise.io:
-        stack: osx-xcode-15.4.x
-        machine_type_id: g2-m1.8core
-
+  rock-remote-build-ios:
+    description: 'Install and build iOS app with Rock'
     envs:
-      - WORKING_DIRECTORY: ./test # path to a local directory with a rock project
-      - DESTINATION: simulator
-      - SCHEME: AppScheme # name of the scheme to build
-      - CONFIGURATION: Release
-      - RE_SIGN: "false"
-      - AD_HOC: "false"
-      - ROCK_BUILD_EXTRA_PARAMS: ""
-      - CERTIFICATE_BASE64: ""
-      - CERTIFICATE_PASSWORD: ""
-      - PROVISIONING_PROFILE_BASE64: ""
-      - PROVISIONING_PROFILE_NAME: ""
-      - KEYCHAIN_PASSWORD: ""
-
+    - WORKING_DIRECTORY: "$BITRISE_SOURCE_DIR"
+    - DESTINATION: simulator
+    - SCHEME: ReactNativeRocks
+    - CONFIGURATION: Release
+    - RE_SIGN: 'false'
+    - AD_HOC: 'false'
+    - ROCK_BUILD_EXTRA_PARAMS: ''
+    - CERTIFICATE_BASE64: ''
+    - CERTIFICATE_PASSWORD: ''
+    - PROVISIONING_PROFILE_BASE64: ''
+    - PROVISIONING_PROFILE_NAME: ''
+    - KEYCHAIN_PASSWORD: ''
     steps:
-      - path::bitrise/steps/remote-build:
-          title: Rock Remote Build - iOS (local)
-          inputs:
-            - WORKING_DIRECTORY: $WORKING_DIRECTORY
-            - DESTINATION: $DESTINATION
-            - SCHEME: $SCHEME
-            - CONFIGURATION: $CONFIGURATION
-            - RE_SIGN: $RE_SIGN
-            - AD_HOC: $AD_HOC
-            - ROCK_BUILD_EXTRA_PARAMS: $ROCK_BUILD_EXTRA_PARAMS
-            - CERTIFICATE_BASE64: $CERTIFICATE_BASE64
-            - CERTIFICATE_PASSWORD: $CERTIFICATE_PASSWORD
-            - PROVISIONING_PROFILE_BASE64: $PROVISIONING_PROFILE_BASE64
-            - PROVISIONING_PROFILE_NAME: $PROVISIONING_PROFILE_NAME
-            - KEYCHAIN_PASSWORD: $KEYCHAIN_PASSWORD
-
-      - script@1:
-          title: Show Step Outputs
-          inputs:
-            - content: |-
-                #!/usr/bin/env bash
-                set -e
-                echo "ARTIFACT_URL=${ARTIFACT_URL:-<empty>}"
-                echo "ARTIFACT_ID=${ARTIFACT_ID:-<empty>}"
+    - activate-ssh-key@4: {}
+    - git-clone@8: {}
+    - npm@1:
+        title: npm install
+        inputs:
+        - workdir: "$WORKING_DIRECTORY"
+        - command: install
+    - git::https://github.com/callstackincubator/ios@main:
+        title: Rock Remote Build - iOS
+        inputs:
+        - WORKING_DIRECTORY: "$WORKING_DIRECTORY"
+        - DESTINATION: "$DESTINATION"
+        - SCHEME: "$SCHEME"
+        - CONFIGURATION: "$CONFIGURATION"
+        - RE_SIGN: "$RE_SIGN"
+        - AD_HOC: "$AD_HOC"
+        - ROCK_BUILD_EXTRA_PARAMS: "$ROCK_BUILD_EXTRA_PARAMS"
+        - CERTIFICATE_BASE64: "$CERTIFICATE_BASE64"
+        - CERTIFICATE_PASSWORD: "$CERTIFICATE_PASSWORD"
+        - PROVISIONING_PROFILE_BASE64: "$PROVISIONING_PROFILE_BASE64"
+        - PROVISIONING_PROFILE_NAME: "$PROVISIONING_PROFILE_NAME"
+        - KEYCHAIN_PASSWORD: "$KEYCHAIN_PASSWORD"
+    - script@1:
+        title: Show Step Outputs
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            set -e
+            echo "ARTIFACT_URL=${ARTIFACT_URL:-<empty>}"
+            echo "ARTIFACT_ID=${ARTIFACT_ID:-<empty>}"
