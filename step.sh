@@ -12,11 +12,7 @@ CONFIGURATION="${CONFIGURATION:-}"
 RE_SIGN="${RE_SIGN:-}"
 AD_HOC="${AD_HOC:-false}"
 
-CERTIFICATE_BASE64="${CERTIFICATE_BASE64:-}"
-CERTIFICATE_PASSWORD="${CERTIFICATE_PASSWORD:-}"
-PROVISIONING_PROFILE_BASE64="${PROVISIONING_PROFILE_BASE64:-}"
-PROVISIONING_PROFILE_NAME="${PROVISIONING_PROFILE_NAME:-}"
-KEYCHAIN_PASSWORD="${KEYCHAIN_PASSWORD:-}"
+SIGNING_IDENTITY="${SIGNING_IDENTITY:-}"
 
 ROCK_BUILD_EXTRA_PARAMS="${ROCK_BUILD_EXTRA_PARAMS:-}"
 
@@ -27,17 +23,7 @@ if [ "$DESTINATION" != "simulator" ] && [ "$DESTINATION" != "device" ]; then
   fail "Invalid input 'destination': '$DESTINATION'. Allowed values: 'simulator' or 'device'."
 fi
 
-if [ "$DESTINATION" = "device" ]; then
-  [ -z "$CERTIFICATE_BASE64" ] && fail "Input 'certificate-base64' is required for device builds."
-  [ -z "$CERTIFICATE_PASSWORD" ] && fail "Input 'certificate-password' is required for device builds."
-  [ -z "$PROVISIONING_PROFILE_BASE64" ] && fail "Input 'provisioning-profile-base64' is required for device builds."
-  [ -z "$PROVISIONING_PROFILE_NAME" ] && fail "Input 'provisioning-profile-name' is required for device builds."
-  [ -z "$KEYCHAIN_PASSWORD" ] && fail "Input 'keychain-password' is required for device builds."
-fi
 
-# Provisioning profile dir
-PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
-envman add --key PROFILE_DIR --value "$PROFILE_DIR"
 
 # Fingerprint
 pushd "$WORKING_DIRECTORY" >/dev/null
@@ -108,28 +94,6 @@ if [ -z "$ARTIFACT_NAME" ]; then
   envman add --key ARTIFACT_NAME --value "$ARTIFACT_NAME"
 fi
 
-# Setup Code Signing (device builds only)
-if { [ "$RE_SIGN" = "true" ] && [ "$DESTINATION" = "device" ]; } || { [ -z "$ARTIFACT_URL" ] && [ "$DESTINATION" = "device" ]; }; then
-  KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
-
-  security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-  security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
-  security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-
-  CERTIFICATE_PATH="$RUNNER_TEMP/certificate.p12"
-  echo -n "$CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
-  security import "$CERTIFICATE_PATH" -P "$CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
-  security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-  security list-keychain -d user -s "$KEYCHAIN_PATH"
-
-  IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" | grep -oE '([0-9A-F]{40})' | head -n 1 || (echo "$IDENTITY" && exit 1))
-  echo "Certificate identity: $IDENTITY"
-  envman add --key IDENTITY --value "$IDENTITY"
-
-  mkdir -p "$PROFILE_DIR"
-  PROFILE_PATH="$PROFILE_DIR/$PROVISIONING_PROFILE_NAME.mobileprovision"
-  echo -n "$PROVISIONING_PROFILE_BASE64" | base64 --decode -o "$PROFILE_PATH"
-fi
 
 # Build if no artifact was found
 if [ -z "$ARTIFACT_URL" ]; then
@@ -177,9 +141,13 @@ if [ -n "$ARTIFACT_URL" ] && [ "$RE_SIGN" = "true" ] && [ "${BITRISE_GIT_EVENT_T
 
   if [ "$DESTINATION" = "device" ]; then
     envman add --key ARTIFACT_PATH --value "$DL_PATH"
-    log "Re-signing IPA with new JS bundle: path=$DL_PATH identity=${IDENTITY:-unset}"
+    log "Re-signing IPA with new JS bundle: path=$DL_PATH identity=${SIGNING_IDENTITY:-auto-detect}"
     pushd "$WORKING_DIRECTORY" >/dev/null
-    npx rock sign:ios "$DL_PATH" --build-jsbundle --identity "$IDENTITY"
+    if [ -n "$SIGNING_IDENTITY" ]; then
+      npx rock sign:ios "$DL_PATH" --build-jsbundle --identity "$SIGNING_IDENTITY"
+    else
+      npx rock sign:ios "$DL_PATH" --build-jsbundle
+    fi
     popd >/dev/null
   else
     APP_DIR="$(dirname "$DL_PATH")"
@@ -256,14 +224,6 @@ if [ -n "${ARTIFACT_URL:-}" ] && [ "$RE_SIGN" = "true" ] && [ "${BITRISE_GIT_EVE
   npx rock remote-cache delete --name "$ARTIFACT_NAME" --all-but-latest --json
 fi
 
-# Clean Up Code Signing (device builds only, when we built locally)
-if [ -z "${ARTIFACT_URL:-}" ] && [ "$DESTINATION" = "device" ]; then
-  KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
-  security delete-keychain "$KEYCHAIN_PATH"
-
-  PROFILE_PATH="$PROFILE_DIR/$PROVISIONING_PROFILE_NAME.mobileprovision"
-  rm -f "$PROFILE_PATH"
-fi
 
 # Cleanup Cache glue
 rm -rf .rock/cache/project.json

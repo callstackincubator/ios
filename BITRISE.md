@@ -1,6 +1,9 @@
 # Rock iOS Bitrise Step
 
-This Bitrise step enables remote building of iOS applications using [Rock](https://rockjs.dev). It supports both simulator and device builds, with automatic artifact caching and code signing capabilities.
+This Bitrise step enables remote building of iOS applications using [Rock](https://rockjs.dev). It supports both simulator and device builds, with automatic artifact caching. Code signing should be configured separately in your workflow before using this step.
+
+> [!NOTE]
+> **Code Signing Required**: This step assumes that iOS code signing is already configured in your workflow before using this step. For device builds and re-signing, certificates and provisioning profiles must be available in the keychain. See the [Bitrise iOS Code Signing documentation](https://docs.bitrise.io/en/bitrise-ci/code-signing/ios-code-signing/ios-code-signing.html) for setup instructions.
 
 ## Usage
 
@@ -24,11 +27,7 @@ workflows:
     - RE_SIGN: 'false'
     - AD_HOC: 'false'
     - ROCK_BUILD_EXTRA_PARAMS: ''
-    - CERTIFICATE_BASE64: ''
-    - CERTIFICATE_PASSWORD: ''
-    - PROVISIONING_PROFILE_BASE64: ''
-    - PROVISIONING_PROFILE_NAME: ''
-    - KEYCHAIN_PASSWORD: ''
+    - SIGNING_IDENTITY: ''
     steps:
     - activate-ssh-key@4: {}
     - git-clone@8: {}
@@ -47,11 +46,7 @@ workflows:
         - RE_SIGN: "$RE_SIGN"
         - AD_HOC: "$AD_HOC"
         - ROCK_BUILD_EXTRA_PARAMS: "$ROCK_BUILD_EXTRA_PARAMS"
-        - CERTIFICATE_BASE64: "$CERTIFICATE_BASE64"
-        - CERTIFICATE_PASSWORD: "$CERTIFICATE_PASSWORD"
-        - PROVISIONING_PROFILE_BASE64: "$PROVISIONING_PROFILE_BASE64"
-        - PROVISIONING_PROFILE_NAME: "$PROVISIONING_PROFILE_NAME"
-        - KEYCHAIN_PASSWORD: "$KEYCHAIN_PASSWORD"
+        - SIGNING_IDENTITY: "$SIGNING_IDENTITY"
 ```
 
 ## Bitrise Inputs
@@ -62,13 +57,9 @@ workflows:
 | `DESTINATION`                 | Build destination: "simulator" or "device"                                      | Yes      | `simulator` |
 | `SCHEME`                      | Xcode scheme                                                                    | Yes      | -           |
 | `CONFIGURATION`               | Xcode configuration                                                             | Yes      | -           |
-| `RE_SIGN`                     | Re-sign the app bundle with new JS bundle                                       | No       | `false`     |
+| `RE_SIGN`                     | Re-sign the app bundle with new JS bundle. Requires certificates in keychain    | No       | `false`     |
 | `AD_HOC`                      | Upload the IPA for ad-hoc distribution to easily install on provisioned devices | No       | `false`     |
-| `CERTIFICATE_BASE64`          | Base64 encoded P12 file for device builds                                       | No       | -           |
-| `CERTIFICATE_PASSWORD`        | Password for the P12 file                                                       | No       | -           |
-| `PROVISIONING_PROFILE_BASE64` | Base64 encoded provisioning profile                                             | No       | -           |
-| `PROVISIONING_PROFILE_NAME`   | Name of the provisioning profile                                                | No       | -           |
-| `KEYCHAIN_PASSWORD`           | Password for temporary keychain                                                 | No       | -           |
+| `SIGNING_IDENTITY`            | Code signing identity for re-signing. Auto-detects if not provided              | No       | -           |
 | `ROCK_BUILD_EXTRA_PARAMS`     | Extra parameters for rock build:ios                                             | No       | -           |
 
 ## Bitrise Outputs
