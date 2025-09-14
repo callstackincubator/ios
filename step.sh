@@ -73,7 +73,7 @@ if [ "${BITRISE_GIT_EVENT_TYPE:-}" = "pull_request" ] && [ "$RE_SIGN" = "true" ]
   ARTIFACT_TRAITS="${DESTINATION},${CONFIGURATION},${BITRISE_PULL_REQUEST:-}"
   envman add --key ARTIFACT_TRAITS --value "$ARTIFACT_TRAITS"
 
-  OUTPUT="$(npx rock remote-cache list -p ios --traits "${ARTIFACT_TRAITS}" --json || (echo "$OUTPUT" && exit 1))"
+  OUTPUT=$(npx rock remote-cache list -p ios --traits "${ARTIFACT_TRAITS}" --json || (echo "$OUTPUT" && exit 1))
   if [ -n "$OUTPUT" ]; then
     ARTIFACT_URL="$(echo "$OUTPUT" | jq -r '.url')"
     ARTIFACT_ID="$(echo "$OUTPUT" | jq -r '.id')"
@@ -89,7 +89,7 @@ if [ -z "$ARTIFACT_NAME" ]; then
   ARTIFACT_TRAITS="${DESTINATION},${CONFIGURATION}"
   envman add --key ARTIFACT_TRAITS --value "$ARTIFACT_TRAITS"
 
-  OUTPUT="$(npx rock remote-cache list -p ios --traits "${ARTIFACT_TRAITS}" --json || (echo "$OUTPUT" && exit 1))"
+  OUTPUT=$(npx rock remote-cache list -p ios --traits "${ARTIFACT_TRAITS}" --json || (echo "$OUTPUT" && exit 1))
   if [ -n "$OUTPUT" ]; then
     ARTIFACT_URL="$(echo "$OUTPUT" | jq -r '.url')"
     ARTIFACT_ID="$(echo "$OUTPUT" | jq -r '.id')"
@@ -122,7 +122,7 @@ if { [ "$RE_SIGN" = "true" ] && [ "$DESTINATION" = "device" ]; } || { [ -z "$ART
   security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
   security list-keychain -d user -s "$KEYCHAIN_PATH"
 
-  IDENTITY="$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" | grep -oE '([0-9A-F]{40})' | head -n 1 || (echo "$IDENTITY" && exit 1))"
+  IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" | grep -oE '([0-9A-F]{40})' | head -n 1 || (echo "$IDENTITY" && exit 1))
   echo "Certificate identity: $IDENTITY"
   envman add --key IDENTITY --value "$IDENTITY"
 
@@ -134,7 +134,7 @@ fi
 # Build if no artifact was found
 if [ -z "$ARTIFACT_URL" ]; then
   pushd "$WORKING_DIRECTORY" >/dev/null
-  JSON_OUTPUT="$(npx rock config -p ios || (echo "$JSON_OUTPUT" && exit 1))"
+  JSON_OUTPUT=$(npx rock config -p ios || (echo "$JSON_OUTPUT" && exit 1))
   IOS_SOURCE_DIR="$(echo "$JSON_OUTPUT" | jq -r '.project.ios.sourceDir')"
   log "Resolved ios.sourceDir: ${IOS_SOURCE_DIR:-<empty>}"
   envman add --key IOS_SOURCE_DIR --value "$IOS_SOURCE_DIR"
@@ -172,7 +172,7 @@ fi
 # PR re-sign: download and (re)sign/rebundle
 if [ -n "$ARTIFACT_URL" ] && [ "$RE_SIGN" = "true" ] && [ "${BITRISE_GIT_EVENT_TYPE:-}" = "pull_request" ]; then
   log "Downloading cached artifact from remote cache: name=$ARTIFACT_NAME"
-  DOWNLOAD_OUTPUT="$(npx rock remote-cache download --name "$ARTIFACT_NAME" --json || (echo "$DOWNLOAD_OUTPUT" && exit 1))"
+  DOWNLOAD_OUTPUT=$(npx rock remote-cache download --name "$ARTIFACT_NAME" --json || (echo "$DOWNLOAD_OUTPUT" && exit 1))
   DL_PATH="$(echo "$DOWNLOAD_OUTPUT" | jq -r '.path')"
 
   if [ "$DESTINATION" = "device" ]; then
@@ -205,7 +205,7 @@ if [ -n "$ARTIFACT_URL" ] && [ "$RE_SIGN" = "true" ] && [ "${BITRISE_GIT_EVENT_T
 fi
 
 # Find artifact URL again before uploading
-OUTPUT="$(npx rock remote-cache list --name "$ARTIFACT_NAME" --json || (echo "$OUTPUT" && exit 1))"
+OUTPUT=$(npx rock remote-cache list --name "$ARTIFACT_NAME" --json || (echo "$OUTPUT" && exit 1))
 if [ -n "$OUTPUT" ]; then
   ARTIFACT_URL="$(echo "$OUTPUT" | jq -r '.url')"
   ARTIFACT_ID="$(echo "$OUTPUT" | jq -r '.id')"
@@ -226,7 +226,7 @@ fi
 
 # Upload to Remote Cache for re-signed builds (PR)
 if [ "$RE_SIGN" = "true" ] && [ "${BITRISE_GIT_EVENT_TYPE:-}" = "pull_request" ] && [ -n "${ARTIFACT_PATH:-}" ]; then
-  OUTPUT="$(npx rock remote-cache upload --name "$ARTIFACT_NAME" --binary-path "$ARTIFACT_PATH" --json || (echo "$OUTPUT" && exit 1))"
+  OUTPUT=$(npx rock remote-cache upload --name "$ARTIFACT_NAME" --binary-path "$ARTIFACT_PATH" --json || (echo "$OUTPUT" && exit 1))
   if [ -n "$OUTPUT" ]; then
     ARTIFACT_URL="$(echo "$OUTPUT" | jq -r '.url')"
     envman add --key ARTIFACT_URL --value "$ARTIFACT_URL"
@@ -235,7 +235,7 @@ fi
 
 # Upload to Remote Cache for regular builds
 if [ -z "${ARTIFACT_URL:-}" ]; then
-  OUTPUT="$(npx rock remote-cache upload --name "$ARTIFACT_NAME" --json || (echo "$OUTPUT" && exit 1))"
+  OUTPUT=$(npx rock remote-cache upload --name "$ARTIFACT_NAME" --json || (echo "$OUTPUT" && exit 1))
   if [ -n "$OUTPUT" ]; then
     ARTIFACT_URL="$(echo "$OUTPUT" | jq -r '.url')"
     envman add --key ARTIFACT_URL --value "$ARTIFACT_URL"
@@ -244,7 +244,7 @@ fi
 
 # Upload for Ad-hoc distribution
 if [ "$AD_HOC" = "true" ] && [ -n "${ARTIFACT_PATH:-}" ]; then
-  OUTPUT="$(npx rock remote-cache upload --name "$ARTIFACT_NAME" --binary-path "$ARTIFACT_PATH" --json --ad-hoc || (echo "$OUTPUT" && exit 1))"
+  OUTPUT=$(npx rock remote-cache upload --name "$ARTIFACT_NAME" --binary-path "$ARTIFACT_PATH" --json --ad-hoc || (echo "$OUTPUT" && exit 1))
   if [ -n "$OUTPUT" ]; then
     ARTIFACT_URL="$(echo "$OUTPUT" | jq -r '.url')"
     envman add --key ARTIFACT_URL --value "$ARTIFACT_URL"
