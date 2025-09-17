@@ -17,11 +17,7 @@ workflows:
     - RE_SIGN: 'false'
     - AD_HOC: 'false'
     - ROCK_BUILD_EXTRA_PARAMS: ''
-    - CERTIFICATE_BASE64: ''
-    - CERTIFICATE_PASSWORD: ''
-    - PROVISIONING_PROFILE_BASE64: ''
-    - PROVISIONING_PROFILE_NAME: ''
-    - KEYCHAIN_PASSWORD: ''
+    - SIGNING_IDENTITY: ''
     steps:
     - activate-ssh-key@4: {}
     - git-clone@8: {}
@@ -40,11 +36,7 @@ workflows:
         - RE_SIGN: "$RE_SIGN"
         - AD_HOC: "$AD_HOC"
         - ROCK_BUILD_EXTRA_PARAMS: "$ROCK_BUILD_EXTRA_PARAMS"
-        - CERTIFICATE_BASE64: "$CERTIFICATE_BASE64"
-        - CERTIFICATE_PASSWORD: "$CERTIFICATE_PASSWORD"
-        - PROVISIONING_PROFILE_BASE64: "$PROVISIONING_PROFILE_BASE64"
-        - PROVISIONING_PROFILE_NAME: "$PROVISIONING_PROFILE_NAME"
-        - KEYCHAIN_PASSWORD: "$KEYCHAIN_PASSWORD"
+        - SIGNING_IDENTITY: "$SIGNING_IDENTITY"
     - script@1:
         title: Show Step Outputs
         inputs:

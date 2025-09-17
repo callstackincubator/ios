@@ -16,7 +16,6 @@ SIGNING_IDENTITY="${SIGNING_IDENTITY:-}"
 
 ROCK_BUILD_EXTRA_PARAMS="${ROCK_BUILD_EXTRA_PARAMS:-}"
 
-RUNNER_TEMP="${RUNNER_TEMP:-${TMPDIR:-/tmp}}"
 
 # Validate inputs (mirror composite action behavior)
 if [ "$DESTINATION" != "simulator" ] && [ "$DESTINATION" != "device" ]; then

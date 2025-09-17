@@ -2,7 +2,8 @@ title: Rock Remote Build - iOS
 summary: Build iOS apps using Rock.
 description: |
   This step builds iOS apps with Rock, optionally re-signing IPAs
-  for PRs or device builds. Supports simulator and device targets.
+  for PRs or device builds. Code signing must be configured separately
+  in your workflow before using this step.
 website: https://github.com/callstackincubator/ios
 source_code_url: https://github.com/callstackincubator/ios
 support_url: https://github.com/callstackincubator/ios/issues
@@ -35,7 +36,7 @@ inputs:
   - DESTINATION:
       opts:
         title: Destination for the build
-        summary: "Use 'simulator' or 'device'. Device builds require signing."
+        summary: "Use 'simulator' or 'device'. Code signing must be configured separately."
         is_required: true
         value: "simulator"
 
@@ -54,7 +55,7 @@ inputs:
   - RE_SIGN:
       opts:
         title: Re-sign IPA with new JS bundle
-        summary: No signing is done for simulator builds
+        summary: Requires certificates in keychain. No signing for simulator builds.
         is_required: false
         value: ""
 
@@ -64,38 +65,11 @@ inputs:
         is_required: false
         value: "false"
 
-  - CERTIFICATE_BASE64:
+  - SIGNING_IDENTITY:
       opts:
-        title: Base64 encoded P12 file (device builds)
+        title: Code signing identity for re-signing
+        summary: Optional. Auto-detects available certificates if not provided.
         is_required: false
-        is_sensitive: true
-        value: ""
-
-  - CERTIFICATE_PASSWORD:
-      opts:
-        title: P12 password (device builds)
-        is_required: false
-        is_sensitive: true
-        value: ""
-
-  - PROVISIONING_PROFILE_BASE64:
-      opts:
-        title: Base64 encoded provisioning profile
-        is_required: false
-        is_sensitive: true
-        value: ""
-
-  - PROVISIONING_PROFILE_NAME:
-      opts:
-        title: Name of provisioning profile (without extension)
-        is_required: false
-        value: ""
-
-  - KEYCHAIN_PASSWORD:
-      opts:
-        title: Keychain password (device builds)
-        is_required: false
-        is_sensitive: true
         value: ""
 
   - ROCK_BUILD_EXTRA_PARAMS:
