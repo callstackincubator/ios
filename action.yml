@@ -88,6 +88,13 @@ runs:
             exit 1
           fi
 
+           if [ -n "${{ inputs.certificate-file }}" ]; then
+            if [ ! -f "${{ inputs.certificate-file }}" ]; then
+              echo "Certificate file not found: '${{ inputs.certificate-file }}'"
+              exit 1
+            fi
+          fi
+
           if [ -z "${{ inputs.certificate-password }}" ]; then
             echo "Input 'certificate-password' is required for device builds."
             exit 1
@@ -101,6 +108,13 @@ runs:
           if [ -z "${{ inputs.provisioning-profile-file }}" ] && [ -z "${{ inputs.provisioning-profile-base64 }}" ]; then
             echo "Either 'provisioning-profile-file' or 'provisioning-profile-base64' is required for device builds."
             exit 1
+          fi
+
+          if [ -n "${{ inputs.provisioning-profile-file }}" ]; then
+            if [ ! -f "${{ inputs.provisioning-profile-file }}" ]; then
+              echo "Provisioning profile file not found: '${{ inputs.provisioning-profile-file }}'"
+              exit 1
+            fi
           fi
 
           if [ -z "${{ inputs.provisioning-profile-name }}" ]; then
