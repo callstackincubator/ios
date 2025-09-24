@@ -14,7 +14,7 @@ inputs:
     required: false
     default: '.'
   destination:
-    description: 'Destination to build to: "simulator" or "device". Using "device" runs "rock build:ios --archive" and code signing settings (certificate, provisioning profile, keychain password) are required.'
+    description: 'Destination to build to: "simulator" or "device". Using "device" runs "rock build:ios --archive" and code signing settings (certificate file/base64, provisioning profile file/base64, certificate password, keychain password) are required.'
     required: true
     default: 'simulator' # 'simulator' or 'device'
   scheme:
@@ -30,11 +30,17 @@ inputs:
     description: 'Upload the IPA for ad-hoc distribution to easily install on provisioned devices'
     required: false
     default: false
+  certificate-file:
+    description: '[Device Builds] Path to P12 file containing Apple certificate (incl. private key)'
+    required: false
   certificate-base64:
     description: '[Device Builds] Base64 encoded P12 file containing Apple certificate (incl. private key)'
     required: false
   certificate-password:
     description: '[Device Builds] Password for the P12 file containing the Apple certificate'
+    required: false
+  provisioning-profile-file:
+    description: '[Device Builds] Path to Apple provisioning profile (*.mobileprovision)'
     required: false
   provisioning-profile-base64:
     description: '[Device Builds] Base64 encoded Apple provisioning profile (*.mobileprovision)'
@@ -72,18 +78,28 @@ runs:
         fi
 
         if [ "${{ inputs.destination }}" == "device" ]; then
-          if [ -z "${{ inputs.certificate-base64 }}" ]; then
-            echo "Input 'certificate-base64' is required for device builds."
+          if [ -n "${{ inputs.certificate-file }}" ] && [ -n "${{ inputs.certificate-base64 }}" ]; then
+            echo "Cannot specify both 'certificate-file' and 'certificate-base64'. Use one or the other."
+            exit 1
+          fi
+
+          if [ -z "${{ inputs.certificate-file }}" ] && [ -z "${{ inputs.certificate-base64 }}" ]; then
+            echo "Either 'certificate-file' or 'certificate-base64' is required for device builds."
             exit 1
           fi
 
           if [ -z "${{ inputs.certificate-password }}" ]; then
-            echo "  Input 'certificate-password' is required for device builds."
+            echo "Input 'certificate-password' is required for device builds."
             exit 1
           fi
 
-          if [ -z "${{ inputs.provisioning-profile-base64 }}" ]; then
-            echo "Input 'provisioning-profile-base64' is required for device builds."
+          if [ -n "${{ inputs.provisioning-profile-file }}" ] && [ -n "${{ inputs.provisioning-profile-base64 }}" ]; then
+            echo "Cannot specify both 'provisioning-profile-file' and 'provisioning-profile-base64'. Use one or the other."
+            exit 1
+          fi
+
+          if [ -z "${{ inputs.provisioning-profile-file }}" ] && [ -z "${{ inputs.provisioning-profile-base64 }}" ]; then
+            echo "Either 'provisioning-profile-file' or 'provisioning-profile-base64' is required for device builds."
             exit 1
           fi
 
@@ -177,7 +193,13 @@ runs:
         # Import certificate to keychain
         CERTIFICATE_PATH=$RUNNER_TEMP/certificate.p12
 
-        echo -n "${{ inputs.certificate-base64 }}" | base64 --decode -o $CERTIFICATE_PATH
+        if [ -n "${{ inputs.certificate-file }}" ]; then
+          # Use certificate file directly
+          cp "${{ inputs.certificate-file }}" $CERTIFICATE_PATH
+        else
+          # Decode base64 certificate
+          echo -n "${{ inputs.certificate-base64 }}" | base64 --decode -o $CERTIFICATE_PATH
+        fi
         security import $CERTIFICATE_PATH -P "${{ inputs.certificate-password }}" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
         security set-key-partition-list -S apple-tool:,apple: -k "${{ inputs.keychain-password }}" $KEYCHAIN_PATH
         security list-keychain -d user -s $KEYCHAIN_PATH
@@ -192,7 +214,14 @@ runs:
         PROFILE_PATH="$PROFILE_DIR/${{ inputs.provisioning-profile-name }}.mobileprovision"
 
         mkdir -p "$PROFILE_DIR"
-        echo -n "${{ inputs.provisioning-profile-base64 }}" | base64 --decode -o "$PROFILE_PATH"
+
+        if [ -n "${{ inputs.provisioning-profile-file }}" ]; then
+          # Use provisioning profile file directly
+          cp "${{ inputs.provisioning-profile-file }}" "$PROFILE_PATH"
+        else
+          # Decode base64 provisioning profile
+          echo -n "${{ inputs.provisioning-profile-base64 }}" | base64 --decode -o "$PROFILE_PATH"
+        fi
       shell: bash
 
     - name: Determine iOS sourceDir
@@ -348,6 +377,9 @@ runs:
       run: |
         KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
         security delete-keychain "$KEYCHAIN_PATH"
+
+        CERTIFICATE_PATH=$RUNNER_TEMP/certificate.p12
+        rm "$CERTIFICATE_PATH"
 
         PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
         PROFILE_PATH="$PROFILE_DIR/${{ inputs.provisioning-profile-name }}.mobileprovision"
