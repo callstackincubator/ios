@@ -34,12 +34,10 @@ jobs:
           scheme: 'YourScheme'
           configuration: 'Debug'
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          # For device builds, add certificate (either file OR base64):
+          # For device builds, add these (for certificate and provisioning profile - either file OR base64):
           # certificate-file: './certs/distribution.p12'
           # certificate-base64: ${{ secrets.CERTIFICATE_BASE64 }}
           # certificate-password: ${{ secrets.CERTIFICATE_PASSWORD }}
-          #
-          # Add provisioning profile (either file OR base64):
           # provisioning-profile-file: './profiles/app.mobileprovision'
           # provisioning-profile-base64: ${{ secrets.PROVISIONING_PROFILE_BASE64 }}
           # provisioning-profile-name: 'YourProfileName'
