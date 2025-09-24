@@ -34,9 +34,13 @@ jobs:
           scheme: 'YourScheme'
           configuration: 'Debug'
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          # For device builds, add these:
+          # For device builds, add certificate (either file OR base64):
+          # certificate-file: './certs/distribution.p12'
           # certificate-base64: ${{ secrets.CERTIFICATE_BASE64 }}
           # certificate-password: ${{ secrets.CERTIFICATE_PASSWORD }}
+          #
+          # Add provisioning profile (either file OR base64):
+          # provisioning-profile-file: './profiles/app.mobileprovision'
           # provisioning-profile-base64: ${{ secrets.PROVISIONING_PROFILE_BASE64 }}
           # provisioning-profile-name: 'YourProfileName'
           # keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
@@ -56,8 +60,10 @@ jobs:
 | `re-sign`                     | Re-sign the app bundle with new JS bundle                                       | No       | `false`     |
 | `ad-hoc`                      | Upload the IPA for ad-hoc distribution to easily install on provisioned devices | No       | `false`     |
 | `certificate-base64`          | Base64 encoded P12 file for device builds                                       | No       | -           |
+| `certificate-file`            | P12 file for device builds                                                      | No       | -           |
 | `certificate-password`        | Password for the P12 file                                                       | No       | -           |
 | `provisioning-profile-base64` | Base64 encoded provisioning profile                                             | No       | -           |
+| `provisioning-profile-file  ` | Provisioning profile file                                                       | No       | -           |
 | `provisioning-profile-name`   | Name of the provisioning profile                                                | No       | -           |
 | `keychain-password`           | Password for temporary keychain                                                 | No       | -           |
 | `rock-build-extra-params`     | Extra parameters for rock build:ios                                             | No       | -           |
