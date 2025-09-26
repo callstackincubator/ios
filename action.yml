@@ -370,7 +370,7 @@ runs:
       shell: bash
 
     - name: Upload Artifact to Remote Cache for regular builds
-      if: ${{ env.PROVIDER_NAME != 'GitHub' && !env.ARTIFACT_URL }}
+      if: ${{ env.PROVIDER_NAME != 'GitHub' && inputs.re-sign != 'true' && !env.ARTIFACT_URL }}
       run: |
         OUTPUT=$(npx rock remote-cache upload --name ${{ env.ARTIFACT_NAME }} --json) || (echo "$OUTPUT" && exit 1)
         echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
