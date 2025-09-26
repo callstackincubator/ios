@@ -7,6 +7,7 @@ This GitHub Action enables remote building of iOS applications using [Rock](http
 - Build iOS apps for simulator or device
 - Automatic artifact caching to speed up builds
 - Code signing support for device builds
+- Support for additional provisioning profiles (extensions, notifications, etc.)
 - Re-signing capability for PR builds
 - Native fingerprint-based caching
 - Configurable build parameters
@@ -44,28 +45,41 @@ jobs:
           # keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
           # re-sign: true
           # ad-hoc: true
+          # For apps with extensions/notifications, add additional provisioning profiles:
+          # additional-provisioning-profiles: |
+          #   [
+          #     {
+          #       "name": "ShareExtension",
+          #       "file": "./profiles/share-extension.mobileprovision"
+          #     },
+          #     {
+          #       "name": "NotificationExtension",
+          #       "base64": "${{ secrets.NOTIFICATION_PROFILE_BASE64 }}"
+          #     }
+          #   ]
 ```
 
 ## Inputs
 
-| Input                         | Description                                                                     | Required | Default     |
-| ----------------------------- | ------------------------------------------------------------------------------- | -------- | ----------- |
-| `github-token`                | GitHub Token                                                                    | Yes      | -           |
-| `working-directory`           | Working directory for the build command                                         | No       | `.`         |
-| `destination`                 | Build destination: "simulator" or "device"                                      | Yes      | `simulator` |
-| `scheme`                      | Xcode scheme                                                                    | Yes      | -           |
-| `configuration`               | Xcode configuration                                                             | Yes      | -           |
-| `re-sign`                     | Re-sign the app bundle with new JS bundle                                       | No       | `false`     |
-| `ad-hoc`                      | Upload the IPA for ad-hoc distribution to easily install on provisioned devices | No       | `false`     |
-| `certificate-base64`          | Base64 encoded P12 file for device builds                                       | No       | -           |
-| `certificate-file`            | P12 file for device builds                                                      | No       | -           |
-| `certificate-password`        | Password for the P12 file                                                       | No       | -           |
-| `provisioning-profile-base64` | Base64 encoded provisioning profile                                             | No       | -           |
-| `provisioning-profile-file  ` | Provisioning profile file                                                       | No       | -           |
-| `provisioning-profile-name`   | Name of the provisioning profile                                                | No       | -           |
-| `keychain-password`           | Password for temporary keychain                                                 | No       | -           |
-| `rock-build-extra-params`     | Extra parameters for rock build:ios                                             | No       | -           |
-| `comment-bot`                 | Whether to comment PR with build link                                           | No       | `true`      |
+| Input                              | Description                                                                     | Required | Default     |
+| ---------------------------------- | ------------------------------------------------------------------------------- | -------- | ----------- |
+| `github-token`                     | GitHub Token                                                                    | Yes      | -           |
+| `working-directory`                | Working directory for the build command                                         | No       | `.`         |
+| `destination`                      | Build destination: "simulator" or "device"                                      | Yes      | `simulator` |
+| `scheme`                           | Xcode scheme                                                                    | Yes      | -           |
+| `configuration`                    | Xcode configuration                                                             | Yes      | -           |
+| `re-sign`                          | Re-sign the app bundle with new JS bundle                                       | No       | `false`     |
+| `ad-hoc`                           | Upload the IPA for ad-hoc distribution to easily install on provisioned devices | No       | `false`     |
+| `certificate-base64`               | Base64 encoded P12 file for device builds                                       | No       | -           |
+| `certificate-file`                 | P12 file for device builds                                                      | No       | -           |
+| `certificate-password`             | Password for the P12 file                                                       | No       | -           |
+| `provisioning-profile-base64`      | Base64 encoded provisioning profile                                             | No       | -           |
+| `provisioning-profile-file`        | Provisioning profile file                                                       | No       | -           |
+| `provisioning-profile-name`        | Name of the provisioning profile                                                | No       | -           |
+| `additional-provisioning-profiles` | JSON array of additional provisioning profiles for extensions/notifications     | No       | -           |
+| `keychain-password`                | Password for temporary keychain                                                 | No       | -           |
+| `rock-build-extra-params`          | Extra parameters for rock build:ios                                             | No       | -           |
+| `comment-bot`                      | Whether to comment PR with build link                                           | No       | `true`      |
 
 ## Outputs
 
