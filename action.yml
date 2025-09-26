@@ -52,7 +52,7 @@ inputs:
     description: '[Device Builds] Password that will protect temporary keychain used for signing (can be a random string)'
     required: false
   additional-provisioning-profiles:
-    description: '[Device Builds] JSON array of additional provisioning profiles. Each object should contain: {"name": "profile-name", "file": "path/to/file"} or {"name": "profile-name", "base64": "base64-encoded-content"}'
+    description: '[Device Builds] JSON array of additional provisioning profiles'
     required: false
   rock-build-extra-params:
     description: 'Extra parameters to pass to "rock build:ios"'
@@ -132,7 +132,7 @@ runs:
 
           # Validate additional provisioning profiles if provided
           if [ -n "${{ inputs.additional-provisioning-profiles }}" ]; then
-            echo "${{ inputs.additional-provisioning-profiles }}" | jq -c '.[]' | while read profile; do
+            while read -r profile; do
               name=$(echo "$profile" | jq -r '.name')
               file_path=$(echo "$profile" | jq -r '.file // empty')
               base64_content=$(echo "$profile" | jq -r '.base64 // empty')
@@ -156,7 +156,7 @@ runs:
                 echo "Additional provisioning profile file not found: '$file_path'"
                 exit 1
               fi
-            done
+            done < <(echo "${{ inputs.additional-provisioning-profiles }}" | jq -c '.[]')
           fi
         fi
       shell: bash
@@ -271,7 +271,7 @@ runs:
 
         # Setup additional provisioning profiles
         if [ -n "${{ inputs.additional-provisioning-profiles }}" ]; then
-          echo "${{ inputs.additional-provisioning-profiles }}" | jq -c '.[]' | while read profile; do
+          while read -r profile; do
             name=$(echo "$profile" | jq -r '.name')
             file_path=$(echo "$profile" | jq -r '.file // empty')
             base64_content=$(echo "$profile" | jq -r '.base64 // empty')
@@ -285,7 +285,7 @@ runs:
             fi
             
             echo "Installed additional provisioning profile: $name"
-          done
+          done < <(echo "${{ inputs.additional-provisioning-profiles }}" | jq -c '.[]')
         fi
       shell: bash
 
@@ -452,12 +452,12 @@ runs:
 
         # Clean up additional provisioning profiles
         if [ -n "${{ inputs.additional-provisioning-profiles }}" ]; then
-          echo "${{ inputs.additional-provisioning-profiles }}" | jq -c '.[]' | while read profile; do
+          while read -r profile; do
             name=$(echo "$profile" | jq -r '.name')
             ADDITIONAL_PROFILE_PATH="$PROFILE_DIR/${name}.mobileprovision"
             rm -f "$ADDITIONAL_PROFILE_PATH"
             echo "Cleaned up additional provisioning profile: $name"
-          done
+          done < <(echo "${{ inputs.additional-provisioning-profiles }}" | jq -c '.[]')
         fi
       shell: bash
 
