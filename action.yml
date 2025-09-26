@@ -51,6 +51,9 @@ inputs:
   keychain-password:
     description: '[Device Builds] Password that will protect temporary keychain used for signing (can be a random string)'
     required: false
+  additional-provisioning-profiles:
+    description: '[Device Builds] JSON array of additional provisioning profiles. Each object should contain: {"name": "profile-name", "file": "path/to/file"} or {"name": "profile-name", "base64": "base64-encoded-content"}'
+    required: false
   rock-build-extra-params:
     description: 'Extra parameters to pass to "rock build:ios"'
     required: false
@@ -125,6 +128,35 @@ runs:
           if [ -z "${{ inputs.keychain-password }}" ]; then
             echo "Input 'keychain-password' is required for device builds."
             exit 1
+          fi
+
+          # Validate additional provisioning profiles if provided
+          if [ -n "${{ inputs.additional-provisioning-profiles }}" ]; then
+            echo "${{ inputs.additional-provisioning-profiles }}" | jq -c '.[]' | while read profile; do
+              name=$(echo "$profile" | jq -r '.name')
+              file_path=$(echo "$profile" | jq -r '.file // empty')
+              base64_content=$(echo "$profile" | jq -r '.base64 // empty')
+              
+              if [ -z "$name" ]; then
+                echo "Additional provisioning profile missing 'name' field"
+                exit 1
+              fi
+              
+              if [ -n "$file_path" ] && [ -n "$base64_content" ]; then
+                echo "Cannot specify both 'file' and 'base64' for profile '$name'"
+                exit 1
+              fi
+              
+              if [ -z "$file_path" ] && [ -z "$base64_content" ]; then
+                echo "Either 'file' or 'base64' is required for profile '$name'"
+                exit 1
+              fi
+              
+              if [ -n "$file_path" ] && [ ! -f "$file_path" ]; then
+                echo "Additional provisioning profile file not found: '$file_path'"
+                exit 1
+              fi
+            done
           fi
         fi
       shell: bash
@@ -235,6 +267,25 @@ runs:
         else
           # Decode base64 provisioning profile
           echo -n "${{ inputs.provisioning-profile-base64 }}" | base64 --decode -o "$PROFILE_PATH"
+        fi
+
+        # Setup additional provisioning profiles
+        if [ -n "${{ inputs.additional-provisioning-profiles }}" ]; then
+          echo "${{ inputs.additional-provisioning-profiles }}" | jq -c '.[]' | while read profile; do
+            name=$(echo "$profile" | jq -r '.name')
+            file_path=$(echo "$profile" | jq -r '.file // empty')
+            base64_content=$(echo "$profile" | jq -r '.base64 // empty')
+            
+            ADDITIONAL_PROFILE_PATH="$PROFILE_DIR/${name}.mobileprovision"
+            
+            if [ -n "$file_path" ]; then
+              cp "$file_path" "$ADDITIONAL_PROFILE_PATH"
+            else
+              echo -n "$base64_content" | base64 --decode -o "$ADDITIONAL_PROFILE_PATH"
+            fi
+            
+            echo "Installed additional provisioning profile: $name"
+          done
         fi
       shell: bash
 
@@ -398,6 +449,16 @@ runs:
         PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
         PROFILE_PATH="$PROFILE_DIR/${{ inputs.provisioning-profile-name }}.mobileprovision"
         rm "$PROFILE_PATH"
+
+        # Clean up additional provisioning profiles
+        if [ -n "${{ inputs.additional-provisioning-profiles }}" ]; then
+          echo "${{ inputs.additional-provisioning-profiles }}" | jq -c '.[]' | while read profile; do
+            name=$(echo "$profile" | jq -r '.name')
+            ADDITIONAL_PROFILE_PATH="$PROFILE_DIR/${name}.mobileprovision"
+            rm -f "$ADDITIONAL_PROFILE_PATH"
+            echo "Cleaned up additional provisioning profile: $name"
+          done
+        fi
       shell: bash
 
     - name: Cleanup Cache
