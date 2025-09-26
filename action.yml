@@ -329,7 +329,7 @@ runs:
         if [ "${{ github.event_name }}" = "pull_request" ]; then
           IDENTIFIER="${{ github.event.pull_request.number }}"
         else
-          IDENTIFIER="${{ github.sha }}"
+          IDENTIFIER=$(echo "$GITHUB_SHA" | cut -c1-7)
         fi
         ARTIFACT_TRAITS="${{ inputs.destination }},${{ inputs.configuration }},${IDENTIFIER}"
         ARTIFACT_TRAITS_HYPHENATED=$(echo "$ARTIFACT_TRAITS" | tr ',' '-')
