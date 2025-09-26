@@ -103,25 +103,34 @@ runs:
             exit 1
           fi
 
-          if [ -n "${{ inputs.provisioning-profile-file }}" ] && [ -n "${{ inputs.provisioning-profile-base64 }}" ]; then
-            echo "Cannot specify both 'provisioning-profile-file' and 'provisioning-profile-base64'. Use one or the other."
-            exit 1
-          fi
-
-          if [ -z "${{ inputs.provisioning-profile-file }}" ] && [ -z "${{ inputs.provisioning-profile-base64 }}" ]; then
-            echo "Either 'provisioning-profile-file' or 'provisioning-profile-base64' is required for device builds."
-            exit 1
-          fi
-
-          if [ -n "${{ inputs.provisioning-profile-file }}" ]; then
-            if [ ! -f "${{ inputs.provisioning-profile-file }}" ]; then
-              echo "Provisioning profile file not found: '${{ inputs.provisioning-profile-file }}'"
+          # Legacy provisioning profile validation (only when not using provisioning-profiles)
+          if [ -z "${{ inputs.provisioning-profiles }}" ]; then
+            if [ -n "${{ inputs.provisioning-profile-file }}" ] && [ -n "${{ inputs.provisioning-profile-base64 }}" ]; then
+              echo "Cannot specify both 'provisioning-profile-file' and 'provisioning-profile-base64'. Use one or the other."
               exit 1
             fi
-          fi
 
-          if [ -z "${{ inputs.provisioning-profile-name }}" ]; then
-            echo "Input 'provisioning-profile-name' is required for device builds."
+            if [ -z "${{ inputs.provisioning-profile-file }}" ] && [ -z "${{ inputs.provisioning-profile-base64 }}" ]; then
+              echo "Either 'provisioning-profile-file' or 'provisioning-profile-base64' is required for device builds when not using 'provisioning-profiles'."
+              exit 1
+            fi
+
+            if [ -n "${{ inputs.provisioning-profile-file }}" ]; then
+              if [ ! -f "${{ inputs.provisioning-profile-file }}" ]; then
+                echo "Provisioning profile file not found: '${{ inputs.provisioning-profile-file }}'"
+                exit 1
+              fi
+            fi
+          fi
+          
+          # Check if either provisioning-profile-name or provisioning-profiles is provided
+          if [ -z "${{ inputs.provisioning-profile-name }}" ] && [ -z "${{ inputs.provisioning-profiles }}" ]; then
+            echo "Either 'provisioning-profile-name' or 'provisioning-profiles' is required for device builds."
+            exit 1
+          fi
+          
+          if [ -n "${{ inputs.provisioning-profile-name }}" ] && [ -n "${{ inputs.provisioning-profiles }}" ]; then
+            echo "Cannot specify both 'provisioning-profile-name' and 'provisioning-profiles'. Use one or the other."
             exit 1
           fi
 
@@ -255,18 +264,20 @@ runs:
         echo "Certificate identity: $IDENTITY"
         echo "IDENTITY=$IDENTITY" >> $GITHUB_ENV
 
-        # Unpack provisioning profile
+        # Unpack provisioning profile (legacy single profile support)
         PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
-        PROFILE_PATH="$PROFILE_DIR/${{ inputs.provisioning-profile-name }}.mobileprovision"
-
         mkdir -p "$PROFILE_DIR"
 
-        if [ -n "${{ inputs.provisioning-profile-file }}" ]; then
-          # Use provisioning profile file directly
-          cp "${{ inputs.provisioning-profile-file }}" "$PROFILE_PATH"
-        else
-          # Decode base64 provisioning profile
-          echo -n "${{ inputs.provisioning-profile-base64 }}" | base64 --decode -o "$PROFILE_PATH"
+        if [ -n "${{ inputs.provisioning-profile-name }}" ]; then
+          PROFILE_PATH="$PROFILE_DIR/${{ inputs.provisioning-profile-name }}.mobileprovision"
+          
+          if [ -n "${{ inputs.provisioning-profile-file }}" ]; then
+            # Use provisioning profile file directly
+            cp "${{ inputs.provisioning-profile-file }}" "$PROFILE_PATH"
+          else
+            # Decode base64 provisioning profile
+            echo -n "${{ inputs.provisioning-profile-base64 }}" | base64 --decode -o "$PROFILE_PATH"
+          fi
         fi
 
         # Setup provisioning profiles
@@ -446,16 +457,20 @@ runs:
         CERTIFICATE_PATH=$RUNNER_TEMP/certificate.p12
         rm "$CERTIFICATE_PATH"
 
-        PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
-        PROFILE_PATH="$PROFILE_DIR/${{ inputs.provisioning-profile-name }}.mobileprovision"
-        rm "$PROFILE_PATH"
+        # Clean up legacy single provisioning profile
+        if [ -n "${{ inputs.provisioning-profile-name }}" ]; then
+          PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
+          PROFILE_PATH="$PROFILE_DIR/${{ inputs.provisioning-profile-name }}.mobileprovision"
+          rm "$PROFILE_PATH"
+        fi
 
         # Clean up provisioning profiles
         if [ -n "${{ inputs.provisioning-profiles }}" ]; then
+          PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
           while read -r profile; do
             name=$(echo "$profile" | jq -r '.name')
-            ADDITIONAL_PROFILE_PATH="$PROFILE_DIR/${name}.mobileprovision"
-            rm -f "$ADDITIONAL_PROFILE_PATH"
+            PROFILE_PATH="$PROFILE_DIR/${name}.mobileprovision"
+            rm "$PROFILE_PATH"
             echo "Cleaned up additional provisioning profile: $name"
           done < <(echo "${{ inputs.provisioning-profiles }}" | jq -c '.[]')
         fi
