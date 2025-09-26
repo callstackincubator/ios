@@ -39,15 +39,16 @@ jobs:
           # certificate-file: './certs/distribution.p12'
           # certificate-base64: ${{ secrets.CERTIFICATE_BASE64 }}
           # certificate-password: ${{ secrets.CERTIFICATE_PASSWORD }}
-          # provisioning-profile-file: './profiles/app.mobileprovision'
-          # provisioning-profile-base64: ${{ secrets.PROVISIONING_PROFILE_BASE64 }}
-          # provisioning-profile-name: 'YourProfileName'
           # keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
           # re-sign: true
           # ad-hoc: true
-          # For apps with extensions/notifications, add additional provisioning profiles:
-          # additional-provisioning-profiles: |
+          # For apps that require provisioning profiles:
+          # provisioning-profiles: |
           #   [
+          #     {
+          #       "name": "NewApp_AdHoc",
+          #       "file": "./profiles/new-app-profile.mobileprovision"
+          #     },
           #     {
           #       "name": "ShareExtension",
           #       "file": "./profiles/share-extension.mobileprovision"
@@ -61,25 +62,25 @@ jobs:
 
 ## Inputs
 
-| Input                              | Description                                                                     | Required | Default     |
-| ---------------------------------- | ------------------------------------------------------------------------------- | -------- | ----------- |
-| `github-token`                     | GitHub Token                                                                    | Yes      | -           |
-| `working-directory`                | Working directory for the build command                                         | No       | `.`         |
-| `destination`                      | Build destination: "simulator" or "device"                                      | Yes      | `simulator` |
-| `scheme`                           | Xcode scheme                                                                    | Yes      | -           |
-| `configuration`                    | Xcode configuration                                                             | Yes      | -           |
-| `re-sign`                          | Re-sign the app bundle with new JS bundle                                       | No       | `false`     |
-| `ad-hoc`                           | Upload the IPA for ad-hoc distribution to easily install on provisioned devices | No       | `false`     |
-| `certificate-base64`               | Base64 encoded P12 file for device builds                                       | No       | -           |
-| `certificate-file`                 | P12 file for device builds                                                      | No       | -           |
-| `certificate-password`             | Password for the P12 file                                                       | No       | -           |
-| `provisioning-profile-base64`      | Base64 encoded provisioning profile                                             | No       | -           |
-| `provisioning-profile-file`        | Provisioning profile file                                                       | No       | -           |
-| `provisioning-profile-name`        | Name of the provisioning profile                                                | No       | -           |
-| `additional-provisioning-profiles` | JSON array of additional provisioning profiles for extensions/notifications     | No       | -           |
-| `keychain-password`                | Password for temporary keychain                                                 | No       | -           |
-| `rock-build-extra-params`          | Extra parameters for rock build:ios                                             | No       | -           |
-| `comment-bot`                      | Whether to comment PR with build link                                           | No       | `true`      |
+| Input                         | Description                                                                     | Required | Default     |
+| ----------------------------- | ------------------------------------------------------------------------------- | -------- | ----------- |
+| `github-token`                | GitHub Token                                                                    | Yes      | -           |
+| `working-directory`           | Working directory for the build command                                         | No       | `.`         |
+| `destination`                 | Build destination: "simulator" or "device"                                      | Yes      | `simulator` |
+| `scheme`                      | Xcode scheme                                                                    | Yes      | -           |
+| `configuration`               | Xcode configuration                                                             | Yes      | -           |
+| `re-sign`                     | Re-sign the app bundle with new JS bundle                                       | No       | `false`     |
+| `ad-hoc`                      | Upload the IPA for ad-hoc distribution to easily install on provisioned devices | No       | `false`     |
+| `certificate-base64`          | Base64 encoded P12 file for device builds                                       | No       | -           |
+| `certificate-file`            | P12 file for device builds                                                      | No       | -           |
+| `certificate-password`        | Password for the P12 file                                                       | No       | -           |
+| `provisioning-profile-base64` | Base64 encoded provisioning profile                                             | No       | -           |
+| `provisioning-profile-file`   | Provisioning profile file                                                       | No       | -           |
+| `provisioning-profile-name`   | Name of the provisioning profile                                                | No       | -           |
+| `provisioning-profiles`       | JSON array of provisioning profiles                                             | No       | -           |
+| `keychain-password`           | Password for temporary keychain                                                 | No       | -           |
+| `rock-build-extra-params`     | Extra parameters for rock build:ios                                             | No       | -           |
+| `comment-bot`                 | Whether to comment PR with build link                                           | No       | `true`      |
 
 ## Outputs
 
