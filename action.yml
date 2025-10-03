@@ -98,10 +98,6 @@ runs:
             fi
           fi
 
-          if [ -z "${{ inputs.certificate-password }}" ]; then
-            echo "Input 'certificate-password' is required for device builds."
-            exit 1
-          fi
 
           # Legacy provisioning profile validation (only when not using provisioning-profiles)
           if [ -z "${{ inputs.provisioning-profiles }}" ]; then
@@ -134,10 +130,6 @@ runs:
             exit 1
           fi
 
-          if [ -z "${{ inputs.keychain-password }}" ]; then
-            echo "Input 'keychain-password' is required for device builds."
-            exit 1
-          fi
 
           # Validate provisioning profiles if provided
           if [ -n "${{ inputs.provisioning-profiles }}" ]; then
@@ -241,9 +233,14 @@ runs:
         # Create temporary keychain
         KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
-        security create-keychain -p "${{ inputs.keychain-password }}" $KEYCHAIN_PATH
+        KEYCHAIN_PASSWORD="${{ inputs.keychain-password }}"
+        if [ -z "$KEYCHAIN_PASSWORD" ]; then
+          KEYCHAIN_PASSWORD="default-keychain-password"
+        fi
+
+        security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
         security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-        security unlock-keychain -p "${{ inputs.keychain-password }}" $KEYCHAIN_PATH
+        security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
         # Import certificate to keychain
         CERTIFICATE_PATH=$RUNNER_TEMP/certificate.p12
@@ -255,8 +252,12 @@ runs:
           # Decode base64 certificate
           echo -n "${{ inputs.certificate-base64 }}" | base64 --decode -o $CERTIFICATE_PATH
         fi
-        security import $CERTIFICATE_PATH -P "${{ inputs.certificate-password }}" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
-        security set-key-partition-list -S apple-tool:,apple: -k "${{ inputs.keychain-password }}" $KEYCHAIN_PATH
+        if [ -n "${{ inputs.certificate-password }}" ]; then
+          security import $CERTIFICATE_PATH -P "${{ inputs.certificate-password }}" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+        else
+          security import $CERTIFICATE_PATH -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+        fi
+        security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
         security list-keychain -d user -s $KEYCHAIN_PATH
 
         # Infer certificate identity
