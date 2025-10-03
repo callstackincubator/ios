@@ -258,14 +258,11 @@ runs:
         if [ -n "${{ inputs.certificate-password }}" ]; then
           security import $CERTIFICATE_PATH -P "${{ inputs.certificate-password }}" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
         else
-          if ! security import $CERTIFICATE_PATH -A -t cert -f pkcs12 -k $KEYCHAIN_PATH; then
+          SECURITY_IMPORT_ERROR=$(security import $CERTIFICATE_PATH -A -t cert -f pkcs12 -k $KEYCHAIN_PATH 2>&1)
+          if [ $? -ne 0 ]; then
             echo "Certificate import failed. If this P12 file requires a password, please provide certificate-password input."
-            SECURITY_IMPORT_ERROR=$(security import $CERTIFICATE_PATH -A -t cert -f pkcs12 -k $KEYCHAIN_PATH 2>&1)
-            if [ $? -ne 0 ]; then
-              echo "Certificate import failed. If this P12 file requires a password, please provide certificate-password input."
-              echo "Error output from 'security import':"
-              echo "$SECURITY_IMPORT_ERROR"
-            fi
+            echo "Error output from 'security import':"
+            echo "$SECURITY_IMPORT_ERROR"
             exit 1
           fi
         fi
