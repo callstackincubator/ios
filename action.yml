@@ -238,6 +238,9 @@ runs:
           KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
         fi
 
+        # Mask the keychain password to prevent accidental logging
+        echo "::add-mask::$KEYCHAIN_PASSWORD"
+
         security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
         security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
         security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
@@ -257,6 +260,12 @@ runs:
         else
           if ! security import $CERTIFICATE_PATH -A -t cert -f pkcs12 -k $KEYCHAIN_PATH; then
             echo "Certificate import failed. If this P12 file requires a password, please provide certificate-password input."
+            SECURITY_IMPORT_ERROR=$(security import $CERTIFICATE_PATH -A -t cert -f pkcs12 -k $KEYCHAIN_PATH 2>&1)
+            if [ $? -ne 0 ]; then
+              echo "Certificate import failed. If this P12 file requires a password, please provide certificate-password input."
+              echo "Error output from 'security import':"
+              echo "$SECURITY_IMPORT_ERROR"
+            fi
             exit 1
           fi
         fi
