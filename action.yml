@@ -91,7 +91,7 @@ runs:
             exit 1
           fi
 
-           if [ -n "${{ inputs.certificate-file }}" ]; then
+          if [ -n "${{ inputs.certificate-file }}" ]; then
             if [ ! -f "${{ inputs.certificate-file }}" ]; then
               echo "Certificate file not found: '${{ inputs.certificate-file }}'"
               exit 1
@@ -235,7 +235,7 @@ runs:
 
         KEYCHAIN_PASSWORD="${{ inputs.keychain-password }}"
         if [ -z "$KEYCHAIN_PASSWORD" ]; then
-          KEYCHAIN_PASSWORD="default-keychain-password"
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
         fi
 
         security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
@@ -255,7 +255,10 @@ runs:
         if [ -n "${{ inputs.certificate-password }}" ]; then
           security import $CERTIFICATE_PATH -P "${{ inputs.certificate-password }}" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
         else
-          security import $CERTIFICATE_PATH -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          if ! security import $CERTIFICATE_PATH -A -t cert -f pkcs12 -k $KEYCHAIN_PATH; then
+            echo "Certificate import failed. If this P12 file requires a password, please provide certificate-password input."
+            exit 1
+          fi
         fi
         security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
         security list-keychain -d user -s $KEYCHAIN_PATH
