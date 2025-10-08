@@ -133,7 +133,7 @@ runs:
 
           # Validate provisioning profiles if provided
           if [ -n "${{ inputs.provisioning-profiles }}" ]; then
-            while read -r profile; do
+            while IFS= read -r profile; do
               name="$(echo "$profile" | jq -r '.name')"
               file_path="$(echo "$profile" | jq -r '.file // empty')"
               base64_content="$(echo "$profile" | jq -r '.base64 // empty')"
@@ -144,17 +144,17 @@ runs:
               fi
               
               if [ -n "$file_path" ] && [ -n "$base64_content" ]; then
-                echo "Cannot specify both 'file' and 'base64' for profile '$name'"
+                printf "Cannot specify both 'file' and 'base64' for profile: %s\n" "$name"
                 exit 1
               fi
               
               if [ -z "$file_path" ] && [ -z "$base64_content" ]; then
-                echo "Either 'file' or 'base64' is required for profile '$name'"
+                printf "Either 'file' or 'base64' is required for profile: %s\n" "$name"
                 exit 1
               fi
               
               if [ -n "$file_path" ] && [ ! -f "$file_path" ]; then
-                echo "Provisioning profile file not found: '$file_path'"
+                printf "Provisioning profile file not found: %s\n" "$file_path"
                 exit 1
               fi
             done < <(echo '${{ inputs.provisioning-profiles }}' | jq -c '.[]')
@@ -290,7 +290,7 @@ runs:
 
         # Setup provisioning profiles
         if [ -n "${{ inputs.provisioning-profiles }}" ]; then
-          while read -r profile; do
+          while IFS= read -r profile; do
             name="$(echo "$profile" | jq -r '.name')"
             file_path="$(echo "$profile" | jq -r '.file // empty')"
             base64_content="$(echo "$profile" | jq -r '.base64 // empty')"
@@ -303,7 +303,7 @@ runs:
               echo -n "$base64_content" | base64 --decode -o "$ADDITIONAL_PROFILE_PATH"
             fi
             
-            echo "Installed provisioning profile: $name"
+            printf "Installed provisioning profile: %s\n" "$name"
           done < <(echo '${{ inputs.provisioning-profiles }}' | jq -c '.[]')
         fi
       shell: bash
@@ -480,11 +480,11 @@ runs:
         # Clean up provisioning profiles
         if [ -n "${{ inputs.provisioning-profiles }}" ]; then
           PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
-          while read -r profile; do
+          while IFS= read -r profile; do
             name="$(echo "$profile" | jq -r '.name')"
             PROFILE_PATH="$PROFILE_DIR/${name}.mobileprovision"
             rm "$PROFILE_PATH"
-            echo "Cleaned up additional provisioning profile: $name"
+            printf "Cleaned up provisioning profile: %s\n" "$name"
           done < <(echo '${{ inputs.provisioning-profiles }}' | jq -c '.[]')
         fi
       shell: bash
