@@ -256,11 +256,18 @@ runs:
 
         # Import the certificate silently (suppress sensitive output)
         if [ -n "${{ inputs.certificate-password }}" ]; then
-          security import "$CERTIFICATE_PATH" -P "${{ inputs.certificate-password }}" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH" >/dev/null
+          SECURITY_IMPORT_ERROR=$(security import "$CERTIFICATE_PATH" -P "${{ inputs.certificate-password }}" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH" 2>&1)
+          if [ $? -ne 0 ]; then
+            echo "Certificate import failed with provided password."
+            echo "Error output from 'security import':"
+            echo "$SECURITY_IMPORT_ERROR"
+            exit 1
+          fi
         else
           SECURITY_IMPORT_ERROR=$(security import "$CERTIFICATE_PATH" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH" 2>&1)
-          if [ $? -ne 0 ]; then
-            echo "Certificate import failed. If this P12 file requires a password, please provide certificate-password input."
+          SECURITY_IMPORT_EXIT_CODE=$?
+          if [ $SECURITY_IMPORT_EXIT_CODE -ne 0 ]; then
+            echo "Certificate import failed. If this P12 file requires a password, please provide 'certificate-password' input."
             echo "Error output from 'security import':"
             echo "$SECURITY_IMPORT_ERROR"
             exit 1
