@@ -248,15 +248,17 @@ runs:
 
         if [ -n "${{ inputs.certificate-file }}" ]; then
           # Use certificate file directly
-          cp "${{ inputs.certificate-file }}" $CERTIFICATE_PATH
+          cp "${{ inputs.certificate-file }}" "$CERTIFICATE_PATH"
         else
           # Decode base64 certificate
-          echo -n "${{ inputs.certificate-base64 }}" | base64 --decode -o $CERTIFICATE_PATH
+          echo -n "${{ inputs.certificate-base64 }}" | base64 --decode -o "$CERTIFICATE_PATH"
         fi
+
+        # Import the certificate silently (suppress sensitive output)
         if [ -n "${{ inputs.certificate-password }}" ]; then
-          security import $CERTIFICATE_PATH -P "${{ inputs.certificate-password }}" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security import "$CERTIFICATE_PATH" -P "${{ inputs.certificate-password }}" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH" >/dev/null
         else
-          SECURITY_IMPORT_ERROR=$(security import $CERTIFICATE_PATH -A -t cert -f pkcs12 -k $KEYCHAIN_PATH 2>&1)
+          SECURITY_IMPORT_ERROR=$(security import "$CERTIFICATE_PATH" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH" 2>&1 >/dev/null)
           if [ $? -ne 0 ]; then
             echo "Certificate import failed. If this P12 file requires a password, please provide certificate-password input."
             echo "Error output from 'security import':"
@@ -264,13 +266,14 @@ runs:
             exit 1
           fi
         fi
-        security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-        security list-keychain -d user -s $KEYCHAIN_PATH
 
-        # Infer certificate identity
-        IDENTITY=$(security find-identity -v -p codesigning $KEYCHAIN_PATH | grep -oE '([0-9A-F]{40})' | head -n 1)
-        echo "Certificate identity: $IDENTITY"
-        echo "IDENTITY=$IDENTITY" >> $GITHUB_ENV
+        security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH" >/dev/null
+        security list-keychain -d user -s "$KEYCHAIN_PATH" >/dev/null
+
+        # Infer certificate identity (safe: SHA-1 fingerprint only)
+        IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" | grep -oE '([0-9A-F]{40})' | head -n 1)
+        echo "Using signing identity (SHA-1): ${IDENTITY:0:8}…"
+        echo "IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
 
         # Unpack provisioning profile (legacy single profile support)
         PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
