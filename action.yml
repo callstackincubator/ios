@@ -99,8 +99,9 @@ runs:
           fi
 
 
-          # Legacy provisioning profile validation (only when not using provisioning-profiles)
-          if [ -z "${{ inputs.provisioning-profiles }}" ]; then
+        # Legacy provisioning profile validation (only when not using provisioning-profiles)
+        PROVISIONING_PROFILES='${{ inputs.provisioning-profiles }}'
+        if [ -z "$PROVISIONING_PROFILES" ]; then
             if [ -n "${{ inputs.provisioning-profile-file }}" ] && [ -n "${{ inputs.provisioning-profile-base64 }}" ]; then
               echo "Cannot specify both 'provisioning-profile-file' and 'provisioning-profile-base64'. Use one or the other."
               exit 1
@@ -119,20 +120,20 @@ runs:
             fi
           fi
           
-          # Check if either provisioning-profile-name or provisioning-profiles is provided
-          if [ -z "${{ inputs.provisioning-profile-name }}" ] && [ -z "${{ inputs.provisioning-profiles }}" ]; then
+        # Check if either provisioning-profile-name or provisioning-profiles is provided
+        if [ -z "${{ inputs.provisioning-profile-name }}" ] && [ -z "$PROVISIONING_PROFILES" ]; then
             echo "Either 'provisioning-profile-name' or 'provisioning-profiles' is required for device builds."
             exit 1
           fi
           
-          if [ -n "${{ inputs.provisioning-profile-name }}" ] && [ -n "${{ inputs.provisioning-profiles }}" ]; then
+          if [ -n "${{ inputs.provisioning-profile-name }}" ] && [ -n "$PROVISIONING_PROFILES" ]; then
             echo "Cannot specify both 'provisioning-profile-name' and 'provisioning-profiles'. Use one or the other."
             exit 1
           fi
 
 
           # Validate provisioning profiles if provided
-          if [ -n "${{ inputs.provisioning-profiles }}" ]; then
+          if [ -n "$PROVISIONING_PROFILES" ]; then
             while IFS= read -r profile; do
               name="$(echo "$profile" | jq -r '.name')"
               file_path="$(echo "$profile" | jq -r '.file // empty')"
@@ -157,7 +158,7 @@ runs:
                 printf "Provisioning profile file not found: %s\n" "$file_path"
                 exit 1
               fi
-            done < <(echo '${{ inputs.provisioning-profiles }}' | jq -c '.[]')
+            done < <(echo "$PROVISIONING_PROFILES" | jq -c '.[]')
           fi
         fi
       shell: bash
@@ -230,6 +231,9 @@ runs:
     - name: Setup Code Signing (device builds only)
       if: ${{ inputs.re-sign == 'true' && inputs.destination == 'device' || (!env.ARTIFACT_URL && inputs.destination == 'device') }}
       run: |
+        # Store provisioning profiles input
+        PROVISIONING_PROFILES='${{ inputs.provisioning-profiles }}'
+
         # Create temporary keychain
         KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
@@ -289,7 +293,7 @@ runs:
         fi
 
         # Setup provisioning profiles
-        if [ -n "${{ inputs.provisioning-profiles }}" ]; then
+        if [ -n "$PROVISIONING_PROFILES" ]; then
           while IFS= read -r profile; do
             name="$(echo "$profile" | jq -r '.name')"
             file_path="$(echo "$profile" | jq -r '.file // empty')"
@@ -304,7 +308,7 @@ runs:
             fi
             
             printf "Installed provisioning profile: %s\n" "$name"
-          done < <(echo '${{ inputs.provisioning-profiles }}' | jq -c '.[]')
+          done < <(echo "$PROVISIONING_PROFILES" | jq -c '.[]')
         fi
       shell: bash
 
@@ -464,6 +468,9 @@ runs:
     - name: Clean Up Code Signing (device builds only)
       if: ${{ inputs.re-sign == 'true' && inputs.destination == 'device' || (!env.ARTIFACT_URL && inputs.destination == 'device') }}
       run: |
+        # Store provisioning profiles input
+        PROVISIONING_PROFILES='${{ inputs.provisioning-profiles }}'
+
         KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
         security delete-keychain "$KEYCHAIN_PATH"
 
@@ -478,14 +485,14 @@ runs:
         fi
 
         # Clean up provisioning profiles
-        if [ -n "${{ inputs.provisioning-profiles }}" ]; then
+        if [ -n "$PROVISIONING_PROFILES" ]; then
           PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
           while IFS= read -r profile; do
             name="$(echo "$profile" | jq -r '.name')"
             PROFILE_PATH="$PROFILE_DIR/${name}.mobileprovision"
             rm "$PROFILE_PATH"
             printf "Cleaned up provisioning profile: %s\n" "$name"
-          done < <(echo '${{ inputs.provisioning-profiles }}' | jq -c '.[]')
+          done < <(echo "$PROVISIONING_PROFILES" | jq -c '.[]')
         fi
       shell: bash
 
