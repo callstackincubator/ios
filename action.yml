@@ -382,7 +382,7 @@ runs:
     - name: Re-sign IPA
       if: ${{ env.ARTIFACT_URL && inputs.destination == 'device' && inputs.re-sign == 'true' }}
       run: |
-        npx rock sign:ios ${{ env.ARTIFACT_PATH }} \
+        npx rock sign:ios "${{ env.ARTIFACT_PATH }}" \
           --build-jsbundle \
           --identity ${{ env.IDENTITY }}
       shell: bash
@@ -391,7 +391,7 @@ runs:
     - name: Re-bundle APP
       if: ${{ env.ARTIFACT_URL && inputs.destination == 'simulator' && inputs.re-sign == 'true' }}
       run: |
-        npx rock sign:ios ${{ env.ARTIFACT_TAR_PATH }} \
+        npx rock sign:ios "${{ env.ARTIFACT_TAR_PATH }}" \
           --build-jsbundle \
           --app
       shell: bash
