@@ -95,8 +95,8 @@ runs:
             if [ ! -f "${{ inputs.certificate-file }}" ]; then
               echo "Certificate file not found: '${{ inputs.certificate-file }}'"
               exit 1
+            fi
           fi
-        fi
 
           # Legacy provisioning profile validation (only when not using provisioning-profiles)
           PROVISIONING_PROFILES='${{ inputs.provisioning-profiles }}'
