@@ -98,9 +98,9 @@ runs:
             fi
           fi
 
-
           # Legacy provisioning profile validation (only when not using provisioning-profiles)
-          if [ -z "${{ inputs.provisioning-profiles }}" ]; then
+          PROVISIONING_PROFILES='${{ inputs.provisioning-profiles }}'
+          if [ -z "$PROVISIONING_PROFILES" ]; then
             if [ -n "${{ inputs.provisioning-profile-file }}" ] && [ -n "${{ inputs.provisioning-profile-base64 }}" ]; then
               echo "Cannot specify both 'provisioning-profile-file' and 'provisioning-profile-base64'. Use one or the other."
               exit 1
@@ -118,25 +118,24 @@ runs:
               fi
             fi
           fi
-          
+
           # Check if either provisioning-profile-name or provisioning-profiles is provided
-          if [ -z "${{ inputs.provisioning-profile-name }}" ] && [ -z "${{ inputs.provisioning-profiles }}" ]; then
+          if [ -z "${{ inputs.provisioning-profile-name }}" ] && [ -z "$PROVISIONING_PROFILES" ]; then
             echo "Either 'provisioning-profile-name' or 'provisioning-profiles' is required for device builds."
             exit 1
           fi
-          
-          if [ -n "${{ inputs.provisioning-profile-name }}" ] && [ -n "${{ inputs.provisioning-profiles }}" ]; then
+
+          if [ -n "${{ inputs.provisioning-profile-name }}" ] && [ -n "$PROVISIONING_PROFILES" ]; then
             echo "Cannot specify both 'provisioning-profile-name' and 'provisioning-profiles'. Use one or the other."
             exit 1
           fi
 
-
           # Validate provisioning profiles if provided
-          if [ -n "${{ inputs.provisioning-profiles }}" ]; then
-            while read -r profile; do
-              name=$(echo "$profile" | jq -r '.name')
-              file_path=$(echo "$profile" | jq -r '.file // empty')
-              base64_content=$(echo "$profile" | jq -r '.base64 // empty')
+          if [ -n "$PROVISIONING_PROFILES" ]; then
+            while IFS= read -r profile; do
+              name="$(echo "$profile" | jq -r '.name')"
+              file_path="$(echo "$profile" | jq -r '.file // empty')"
+              base64_content="$(echo "$profile" | jq -r '.base64 // empty')"
               
               if [ -z "$name" ]; then
                 echo "Provisioning profile missing 'name' field"
@@ -144,20 +143,20 @@ runs:
               fi
               
               if [ -n "$file_path" ] && [ -n "$base64_content" ]; then
-                echo "Cannot specify both 'file' and 'base64' for profile '$name'"
+                printf "Cannot specify both 'file' and 'base64' for profile: %s\n" "$name"
                 exit 1
               fi
               
               if [ -z "$file_path" ] && [ -z "$base64_content" ]; then
-                echo "Either 'file' or 'base64' is required for profile '$name'"
+                printf "Either 'file' or 'base64' is required for profile: %s\n" "$name"
                 exit 1
               fi
               
               if [ -n "$file_path" ] && [ ! -f "$file_path" ]; then
-                echo "Provisioning profile file not found: '$file_path'"
+                printf "Provisioning profile file not found: %s\n" "$file_path"
                 exit 1
               fi
-            done < <(echo "${{ inputs.provisioning-profiles }}" | jq -c '.[]')
+            done < <(echo "$PROVISIONING_PROFILES" | jq -c '.[]')
           fi
         fi
       shell: bash
@@ -230,6 +229,9 @@ runs:
     - name: Setup Code Signing (device builds only)
       if: ${{ inputs.re-sign == 'true' && inputs.destination == 'device' || (!env.ARTIFACT_URL && inputs.destination == 'device') }}
       run: |
+        # Store provisioning profiles input
+        PROVISIONING_PROFILES='${{ inputs.provisioning-profiles }}'
+
         # Create temporary keychain
         KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
@@ -237,7 +239,6 @@ runs:
         if [ -z "$KEYCHAIN_PASSWORD" ]; then
           KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
         fi
-
 
         security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
         security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
@@ -299,11 +300,11 @@ runs:
         fi
 
         # Setup provisioning profiles
-        if [ -n "${{ inputs.provisioning-profiles }}" ]; then
-          while read -r profile; do
-            name=$(echo "$profile" | jq -r '.name')
-            file_path=$(echo "$profile" | jq -r '.file // empty')
-            base64_content=$(echo "$profile" | jq -r '.base64 // empty')
+        if [ -n "$PROVISIONING_PROFILES" ]; then
+          while IFS= read -r profile; do
+            name="$(echo "$profile" | jq -r '.name')"
+            file_path="$(echo "$profile" | jq -r '.file // empty')"
+            base64_content="$(echo "$profile" | jq -r '.base64 // empty')"
             
             ADDITIONAL_PROFILE_PATH="$PROFILE_DIR/${name}.mobileprovision"
             
@@ -313,8 +314,8 @@ runs:
               echo -n "$base64_content" | base64 --decode -o "$ADDITIONAL_PROFILE_PATH"
             fi
             
-            echo "Installed provisioning profile: $name"
-          done < <(echo "${{ inputs.provisioning-profiles }}" | jq -c '.[]')
+            printf "Installed provisioning profile: %s\n" "$name"
+          done < <(echo "$PROVISIONING_PROFILES" | jq -c '.[]')
         fi
       shell: bash
 
@@ -388,7 +389,7 @@ runs:
     - name: Re-sign IPA
       if: ${{ env.ARTIFACT_URL && inputs.destination == 'device' && inputs.re-sign == 'true' }}
       run: |
-        npx rock sign:ios ${{ env.ARTIFACT_PATH }} \
+        npx rock sign:ios "${{ env.ARTIFACT_PATH }}" \
           --build-jsbundle \
           --identity ${{ env.IDENTITY }}
       shell: bash
@@ -397,7 +398,7 @@ runs:
     - name: Re-bundle APP
       if: ${{ env.ARTIFACT_URL && inputs.destination == 'simulator' && inputs.re-sign == 'true' }}
       run: |
-        npx rock sign:ios ${{ env.ARTIFACT_TAR_PATH }} \
+        npx rock sign:ios "${{ env.ARTIFACT_TAR_PATH }}" \
           --build-jsbundle \
           --app
       shell: bash
@@ -474,6 +475,9 @@ runs:
     - name: Clean Up Code Signing (device builds only)
       if: ${{ inputs.re-sign == 'true' && inputs.destination == 'device' || (!env.ARTIFACT_URL && inputs.destination == 'device') }}
       run: |
+        # Store provisioning profiles input
+        PROVISIONING_PROFILES='${{ inputs.provisioning-profiles }}'
+
         KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
         security delete-keychain "$KEYCHAIN_PATH"
 
@@ -488,14 +492,14 @@ runs:
         fi
 
         # Clean up provisioning profiles
-        if [ -n "${{ inputs.provisioning-profiles }}" ]; then
+        if [ -n "$PROVISIONING_PROFILES" ]; then
           PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
-          while read -r profile; do
-            name=$(echo "$profile" | jq -r '.name')
+          while IFS= read -r profile; do
+            name="$(echo "$profile" | jq -r '.name')"
             PROFILE_PATH="$PROFILE_DIR/${name}.mobileprovision"
             rm "$PROFILE_PATH"
-            echo "Cleaned up additional provisioning profile: $name"
-          done < <(echo "${{ inputs.provisioning-profiles }}" | jq -c '.[]')
+            printf "Cleaned up provisioning profile: %s\n" "$name"
+          done < <(echo "$PROVISIONING_PROFILES" | jq -c '.[]')
         fi
       shell: bash
 
