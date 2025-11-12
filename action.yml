@@ -343,6 +343,25 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working-directory }}
 
+    - name: Recalculate Fingerprint and Update Artifact Name
+      if: ${{ !env.ARTIFACT_URL }}
+      run: |
+        INITIAL_FINGERPRINT="$FINGERPRINT"
+        NEW_FINGERPRINT=$(npx rock fingerprint -p ios --raw) || (echo "$NEW_FINGERPRINT" && exit 1)
+
+        echo "FINGERPRINT=$NEW_FINGERPRINT" >> $GITHUB_ENV
+
+        if [ "$INITIAL_FINGERPRINT" != "$NEW_FINGERPRINT" ]; then
+          ARTIFACT_TRAITS_HYPHENATED=$(echo "$ARTIFACT_TRAITS" | tr ',' '-')
+          ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT="${ARTIFACT_TRAITS_HYPHENATED}-${NEW_FINGERPRINT}"
+          echo "ARTIFACT_NAME=rock-ios-${ARTIFACT_TRAITS_HYPHENATED_FINGERPRINT}" >> $GITHUB_ENV
+          echo "Fingerprint changed after build. Updated ARTIFACT_NAME."
+        else
+          echo "Fingerprint unchanged after build."
+        fi
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+
     - name: Find Build Artifact
       if: ${{ !env.ARTIFACT_URL }}
       run: |
@@ -515,3 +534,4 @@ runs:
         title: iOS ${{ inputs.configuration }} ${{ inputs.destination == 'simulator' && 'APP for simulators' || 'IPA for physical devices' }}
         artifact-url: ${{ steps.upload-artifact.outputs.artifact-url || env.ARTIFACT_URL }}
         github-token: ${{ inputs.github-token }}
+
