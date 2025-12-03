@@ -404,6 +404,15 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working-directory }}
 
+    - name: Repack APP into tar.gz
+      if: ${{ env.ARTIFACT_URL && inputs.destination == 'simulator' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
+      run: |
+        APP_DIR=$(dirname "$ARTIFACT_TAR_PATH")
+        APP_BASENAME=$(basename "$ARTIFACT_TAR_PATH")
+
+        tar -C "$APP_DIR" -czf "$ARTIFACT_PATH" "$APP_BASENAME"
+      shell: bash
+
     - name: Update Artifact Name for re-signed builds
       if: ${{ env.ARTIFACT_URL && inputs.re-sign == 'true' }}
       run: |
