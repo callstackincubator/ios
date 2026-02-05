@@ -61,6 +61,9 @@ inputs:
     description: 'Whether to send a comment under PR with the link to the generated build'
     required: false
     default: true
+  custom-ref:
+    description: 'Custom app reference for artifact naming'
+    required: false
 
 outputs:
   artifact-url:
@@ -418,6 +421,8 @@ runs:
       run: |
         if [ "${{ github.event_name }}" = "pull_request" ]; then
           IDENTIFIER="${{ github.event.pull_request.number }}"
+        elif [ -n "${{ inputs.custom-ref }}" ]; then
+          IDENTIFIER="${{ inputs.custom-ref }}"
         else
           IDENTIFIER=$(echo "$GITHUB_SHA" | cut -c1-7)
         fi
