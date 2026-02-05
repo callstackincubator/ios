@@ -81,6 +81,7 @@ jobs:
 | `keychain-password`           | Password for temporary keychain (optional - defaults to auto-generated password)                                                  | No       | -           |
 | `rock-build-extra-params`     | Extra parameters for rock build:ios                                                                                               | No       | -           |
 | `comment-bot`                 | Whether to comment PR with build link                                                                                             | No       | `true`      |
+| `custom-ref`                  | Custom app reference for artifact naming. Used instead of fallback to GITHUB_SHA when provided for re-signed builds               | No       | -           |
 
 ## Outputs
 
