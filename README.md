@@ -81,7 +81,7 @@ jobs:
 | `keychain-password`           | Password for temporary keychain (optional - defaults to auto-generated password)                                                  | No       | -           |
 | `rock-build-extra-params`     | Extra parameters for rock build:ios                                                                                               | No       | -           |
 | `comment-bot`                 | Whether to comment PR with build link                                                                                             | No       | `true`      |
-| `custom-ref`                  | Custom app reference for artifact naming                                                                                          | No       | -           |
+| `custom-identifier`           | Custom identifier used in artifact naming for re-sign and ad-hoc flows to distinguish builds with the same native fingerprint     | No       | -           |
 
 ## Artifact Naming
 
@@ -101,10 +101,13 @@ When `ad-hoc: true`, distribution files (IPA + `index.html` + `manifest.plist`) 
 
 ### Identifier Priority
 
-The identifier is resolved in this order:
-1. `custom-ref` input (if provided)
-2. PR number (if `pull_request` event)
-3. Short commit SHA (fallback)
+The identifier distinguishes builds that share the same native fingerprint (e.g., concurrent builds from different branches).
+It is resolved in this order:
+1. `custom-identifier` input — explicit value provided by the caller (e.g., commit SHA of the head of the PR branch)
+2. PR number — automatically extracted from `pull_request` events
+3. Short commit SHA — 7-character fallback for push events and dispatches
+
+> **Note:** The identifier becomes part of artifact names and S3 paths. Allowed characters: `a-z`, `A-Z`, `0-9`, `-`, `.`, `_`. Commas are used internally as trait delimiters and converted to hyphens (e.g., `device,Release,42` → `device-Release-42`), so they must not appear in the identifier. Spaces, slashes, and shell metacharacters are also not allowed.
 
 ## Outputs
 

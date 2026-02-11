@@ -61,8 +61,8 @@ inputs:
     description: 'Whether to send a comment under PR with the link to the generated build'
     required: false
     default: true
-  custom-ref:
-    description: 'Custom app reference for artifact naming'
+  custom-identifier:
+    description: 'Custom identifier used in artifact naming for re-sign and ad-hoc flows to distinguish builds with the same native fingerprint'
     required: false
 
 outputs:
@@ -227,8 +227,12 @@ runs:
     - name: Set Identifier
       if: ${{ inputs.re-sign == 'true' || inputs.ad-hoc == 'true' }}
       run: |
-        if [ -n "${{ inputs.custom-ref }}" ]; then
-          IDENTIFIER="${{ inputs.custom-ref }}"
+        if [ -n "${{ inputs.custom-identifier }}" ]; then
+          IDENTIFIER="${{ inputs.custom-identifier }}"
+          if ! echo "$IDENTIFIER" | grep -qE '^[a-zA-Z0-9._-]+$'; then
+            echo "Invalid 'custom-identifier': '$IDENTIFIER'. Use only alphanumeric characters, hyphens, dots, and underscores."
+            exit 1
+          fi
         elif [ "${{ github.event_name }}" = "pull_request" ]; then
           IDENTIFIER="${{ github.event.pull_request.number }}"
         else
@@ -467,7 +471,6 @@ runs:
     # Non-ad-hoc re-sign flow: upload ZIP Artifact with {identifier}-{fingerprint} name
     # For re-signed builds, the ARTIFACT_NAME may contain PR-number, while Rock will save the artifact without PR trait in its cache.
     # We need to upload the artifact with the PR-number in the name, that's why we use --binary-path with appropriate ARTIFACT_PATH that accounts for it.
-
     - name: Upload re-signed ZIP Artifact for non-ad-hoc flow
       if: ${{ env.PROVIDER_NAME != 'GitHub' && inputs.re-sign == 'true' && inputs.ad-hoc != 'true' }}
       run: |
