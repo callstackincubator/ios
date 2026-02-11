@@ -83,6 +83,29 @@ jobs:
 | `comment-bot`                 | Whether to comment PR with build link                                                                                             | No       | `true`      |
 | `custom-ref`                  | Custom app reference for artifact naming                                                                                          | No       | -           |
 
+## Artifact Naming
+
+The action uses two distinct naming strategies for uploads:
+
+### ZIP Artifacts (native build caching)
+
+ZIP artifacts store the native build for reuse. The naming depends on the flow:
+
+- **Ad-hoc flow** (`ad-hoc: true`): ZIP name uses **fingerprint only** — `rock-ios-{dest}-{config}-{fingerprint}`. One ZIP per fingerprint, shared across all builds with the same native code. Skipped if already uploaded.
+- **Non-ad-hoc re-sign flow** (e.g. `pull_request` with `re-sign: true`): ZIP name includes an **identifier** — `rock-ios-{dest}-{config}-{identifier}-{fingerprint}`. Used as the distribution mechanism without adhoc builds.
+- **Regular builds** (no `re-sign`): ZIP name uses **fingerprint only** `rock-ios-{dest}-{config}-{fingerprint}`
+
+### Ad-Hoc Artifacts (distribution to testers)
+
+When `ad-hoc: true`, distribution files (IPA + `index.html` + `manifest.plist`) are uploaded under a name that **always includes an identifier**: `rock-ios-{dest}-{config}-{identifier}-{fingerprint}`. This ensures every uploaded adhoc build can point to unique distribution URL based on `{identifier}`, even when multiple builds share the same native fingerprint.
+
+### Identifier Priority
+
+The identifier is resolved in this order:
+1. `custom-ref` input (if provided)
+2. PR number (if `pull_request` event)
+3. Short commit SHA (fallback)
+
 ## Outputs
 
 | Output         | Description               |
