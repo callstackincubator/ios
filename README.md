@@ -1,6 +1,6 @@
-# Rock iOS GitHub Action
+# Rock iOS Workflow
 
-This GitHub Action enables remote building of iOS applications using [Rock](https://rockjs.dev). It supports both simulator and device builds, with automatic artifact caching and code signing capabilities.
+This repository provides workflows for building iOS applications using [Rock](https://rockjs.dev). It supports both simulator and device builds, with automatic artifact caching and code signing capabilities.
 
 ## Features
 
@@ -12,7 +12,10 @@ This GitHub Action enables remote building of iOS applications using [Rock](http
 - Native fingerprint-based caching
 - Configurable build parameters
 
-## Usage
+> [!NOTE]
+> **Looking for Bitrise?** See [BITRISE.md](./BITRISE.md) for Bitrise-specific documentation.
+
+## GitHub Actions Usage
 
 ```yaml
 name: iOS Build
@@ -60,7 +63,7 @@ jobs:
           #   ]
 ```
 
-## Inputs
+## GitHub Actions Inputs
 
 | Input                         | Description                                                                                                                       | Required | Default     |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | -------- | ----------- |
@@ -83,7 +86,7 @@ jobs:
 | `comment-bot`                 | Whether to comment PR with build link                                                                                             | No       | `true`      |
 | `custom-ref`                  | Custom app reference for artifact naming                                                                                          | No       | -           |
 
-## Outputs
+## GitHub Actions Outputs
 
 | Output         | Description               |
 | -------------- | ------------------------- |
