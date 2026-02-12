@@ -81,7 +81,33 @@ jobs:
 | `keychain-password`           | Password for temporary keychain (optional - defaults to auto-generated password)                                                  | No       | -           |
 | `rock-build-extra-params`     | Extra parameters for rock build:ios                                                                                               | No       | -           |
 | `comment-bot`                 | Whether to comment PR with build link                                                                                             | No       | `true`      |
-| `custom-ref`                  | Custom app reference for artifact naming                                                                                          | No       | -           |
+| `custom-identifier`           | Custom identifier used in artifact naming for re-sign and ad-hoc flows to distinguish builds with the same native fingerprint     | No       | -           |
+
+## Artifact Naming
+
+The action uses two distinct naming strategies for uploads:
+
+### ZIP Artifacts (native build caching)
+
+ZIP artifacts store the native build for reuse. The naming depends on the flow:
+
+- **Ad-hoc flow** (`ad-hoc: true`): ZIP name uses **fingerprint only** — `rock-ios-{dest}-{config}-{fingerprint}`. One ZIP per fingerprint, shared across all builds with the same native code. Skipped if already uploaded.
+- **Non-ad-hoc re-sign flow** (e.g. `pull_request` with `re-sign: true`): ZIP name includes an **identifier** — `rock-ios-{dest}-{config}-{identifier}-{fingerprint}`. Used as the distribution mechanism without adhoc builds.
+- **Regular builds** (no `re-sign`): ZIP name uses **fingerprint only** `rock-ios-{dest}-{config}-{fingerprint}`
+
+### Ad-Hoc Artifacts (distribution to testers)
+
+When `ad-hoc: true`, distribution files (IPA + `index.html` + `manifest.plist`) are uploaded under a name that **always includes an identifier**: `rock-ios-{dest}-{config}-{identifier}-{fingerprint}`. This ensures every uploaded adhoc build can point to unique distribution URL based on `{identifier}`, even when multiple builds share the same native fingerprint.
+
+### Identifier Priority
+
+The identifier distinguishes builds that share the same native fingerprint (e.g., concurrent builds from different branches).
+It is resolved in this order:
+1. `custom-identifier` input — explicit value provided by the caller (e.g., commit SHA of the head of the PR branch)
+2. PR number — automatically extracted from `pull_request` events
+3. Short commit SHA — 7-character fallback for push events and dispatches
+
+> **Note:** The identifier becomes part of artifact names and S3 paths. Allowed characters: `a-z`, `A-Z`, `0-9`, `-`, `.`, `_`. Commas are used internally as trait delimiters and converted to hyphens (e.g., `device,Release,42` → `device-Release-42`), so they must not appear in the identifier. Spaces, slashes, and shell metacharacters are also not allowed.
 
 ## Outputs
 
