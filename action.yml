@@ -185,6 +185,7 @@ runs:
         mkdir -p .rock/cache
         echo "{\"githubToken\": \"${{ inputs.github-token }}\"}" > .rock/cache/project.json
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
 
     # We create PR-related artifacts to avoid overwriting the main artifact with new JS bundle
     - name: Check if PR-related artifact exists
@@ -200,6 +201,7 @@ runs:
           echo "ARTIFACT_NAME=$(echo "$OUTPUT" | jq -r '.name')" >> $GITHUB_ENV
         fi
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
 
     - name: Check if regular artifact exists
       if: ${{ !env.ARTIFACT_NAME }}
@@ -214,6 +216,7 @@ runs:
           echo "ARTIFACT_NAME=$(echo "$OUTPUT" | jq -r '.name')" >> $GITHUB_ENV
         fi
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
 
     - name: Set Artifact Name (if not set)
       if: ${{ !env.ARTIFACT_NAME }}
@@ -382,6 +385,7 @@ runs:
           echo "ARTIFACT_PATH=$ARTIFACT_PATH" >> $GITHUB_ENV
         fi
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
 
     - name: Download and Unpack IPA
       if: ${{ env.ARTIFACT_URL && inputs.destination == 'device' && inputs.re-sign == 'true' }}
@@ -390,6 +394,7 @@ runs:
         IPA_PATH=$(echo "$DOWNLOAD_OUTPUT" | jq -r '.path')
         echo "ARTIFACT_PATH=$IPA_PATH" >> $GITHUB_ENV
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
 
     - name: Download and Unpack APP
       if: ${{ env.ARTIFACT_URL && inputs.destination == 'simulator' && inputs.re-sign == 'true' }}
@@ -405,6 +410,7 @@ runs:
         echo "ARTIFACT_PATH=$APP_PATH" >> $GITHUB_ENV
         echo "ARTIFACT_TAR_PATH=$EXTRACTED_APP" >> $GITHUB_ENV
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
 
     - name: Re-sign IPA
       if: ${{ env.ARTIFACT_URL && inputs.destination == 'device' && inputs.re-sign == 'true' }}
@@ -456,6 +462,7 @@ runs:
           echo "ARTIFACT_ID=$(echo "$OUTPUT" | jq -r '.id')" >> $GITHUB_ENV
         fi
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
 
     # Special case for GitHub, as it doesn't support uploading through the API
     - name: Upload Artifact to GitHub
@@ -477,6 +484,7 @@ runs:
         OUTPUT=$(npx rock remote-cache upload --name ${{ env.ARTIFACT_NAME }} --binary-path "${{ env.ARTIFACT_PATH }}" --json) || (echo "$OUTPUT" && exit 1)
         echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
 
     # Upload ZIP Artifact with {fingerprint}-only name as base ZIP Artifact for caching only (first build only).
     # Runs only when no cached artifact exists (!ARTIFACT_URL), meaning native build was done from scratch.
@@ -490,6 +498,7 @@ runs:
         OUTPUT=$(npx rock remote-cache upload --name ${{ env.ARTIFACT_NAME }} --json) || (echo "$OUTPUT" && exit 1)
         echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
 
 
     # Ad-hoc uploads always include an identifier in the name {identifier}-{fingerprint}
@@ -509,12 +518,14 @@ runs:
         OUTPUT=$(npx rock remote-cache upload --name ${{ env.ADHOC_ARTIFACT_NAME }} --binary-path "${{ env.ARTIFACT_PATH }}" --json --ad-hoc) || (echo "$OUTPUT" && exit 1)
         echo "ARTIFACT_URL=$(echo "$OUTPUT" | jq -r '.url')" >> $GITHUB_ENV
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
 
     - name: Delete Old Re-Signed Artifacts
       if: ${{ env.ARTIFACT_URL && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
       run: |
         npx rock remote-cache delete --name ${{ env.ARTIFACT_NAME }} --all-but-latest --json
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
 
     - name: Clean Up Code Signing (device builds only)
       if: ${{ inputs.re-sign == 'true' && inputs.destination == 'device' || (!env.ARTIFACT_URL && inputs.destination == 'device') }}
@@ -551,6 +562,7 @@ runs:
       run: |
         rm -rf .rock/cache/project.json
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
 
     - name: Post Build
       if: ${{ github.event_name == 'pull_request' && inputs.comment-bot == 'true' }}
