@@ -1,6 +1,6 @@
-# Rock iOS GitHub Action
+# Rock iOS Workflow
 
-This GitHub Action enables remote building of iOS applications using [Rock](https://rockjs.dev). It supports both simulator and device builds, with automatic artifact caching and code signing capabilities.
+This repository provides workflows for building iOS applications using [Rock](https://rockjs.dev). It supports both simulator and device builds, with automatic artifact caching and code signing capabilities.
 
 ## Features
 
@@ -12,7 +12,10 @@ This GitHub Action enables remote building of iOS applications using [Rock](http
 - Native fingerprint-based caching
 - Configurable build parameters
 
-## Usage
+> [!NOTE]
+> **Looking for Bitrise?** See [BITRISE.md](./BITRISE.md) for Bitrise-specific documentation.
+
+## GitHub Actions Usage
 
 ```yaml
 name: iOS Build
@@ -60,7 +63,7 @@ jobs:
           #   ]
 ```
 
-## Inputs
+## GitHub Actions Inputs
 
 | Input                         | Description                                                                                                                       | Required | Default     |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | -------- | ----------- |
@@ -109,7 +112,7 @@ It is resolved in this order:
 
 > **Note:** The identifier becomes part of artifact names and S3 paths. Allowed characters: `a-z`, `A-Z`, `0-9`, `-`, `.`, `_`. Commas are used internally as trait delimiters and converted to hyphens (e.g., `device,Release,42` → `device-Release-42`), so they must not appear in the identifier. Spaces, slashes, and shell metacharacters are also not allowed.
 
-## Outputs
+## GitHub Actions Outputs
 
 | Output         | Description               |
 | -------------- | ------------------------- |
