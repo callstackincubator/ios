@@ -374,13 +374,17 @@ runs:
           echo IPA_PATH $IPA_PATH
           echo "ARTIFACT_PATH=$IPA_PATH" >> $GITHUB_ENV
         else
-          # Simulator build: needs to compress with tar, as GH actions drop execute file permission during packing to zip
+          # Simulator build: needs to compress with tar, as GH actions drop execute file permission during packing to zip.
+          # COPYFILE_DISABLE=1 prevents macOS BSD tar from embedding AppleDouble ("._*") entries derived from extended
+          # attributes that xcodebuild leaves on built artifacts. Without it, consumers that extract this tarball end
+          # up with stray "._*" files inside the .app bundle, and `simctl install` fails for any app with PlugIns/
+          # (app extensions, widgets) because installd treats "._WidgetExtension.appex" as a real extension.
           APP_PATH=$(find $IOS_SOURCE_DIR/build -name '*.app' -type d | head -1 )
           APP_DIR=$(dirname "$APP_PATH")
           APP_BASENAME=$(basename "$APP_PATH")
 
           ARTIFACT_PATH="$APP_DIR/app.tar.gz"
-          tar -C "$APP_DIR" -czvf "$ARTIFACT_PATH" "$APP_BASENAME"
+          COPYFILE_DISABLE=1 tar -C "$APP_DIR" -czvf "$ARTIFACT_PATH" "$APP_BASENAME"
 
           echo "ARTIFACT_PATH=$ARTIFACT_PATH" >> $GITHUB_ENV
         fi
@@ -436,7 +440,8 @@ runs:
         APP_DIR=$(dirname "$ARTIFACT_TAR_PATH")
         APP_BASENAME=$(basename "$ARTIFACT_TAR_PATH")
 
-        tar -C "$APP_DIR" -czf "$ARTIFACT_PATH" "$APP_BASENAME"
+        # See the "Find Build Artifact" step for why COPYFILE_DISABLE=1 is required when running tar on macOS.
+        COPYFILE_DISABLE=1 tar -C "$APP_DIR" -czf "$ARTIFACT_PATH" "$APP_BASENAME"
       shell: bash
 
     # Non-ad-hoc re-sign flow: add identifier to ARTIFACT_NAME so the re-signed ZIP Artifact doesn't overwrite the base ZIP.
