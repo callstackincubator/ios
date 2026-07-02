@@ -431,7 +431,7 @@ runs:
       working-directory: ${{ inputs.working-directory }}
 
     - name: Repack APP into tar.gz
-      if: ${{ env.ARTIFACT_URL && inputs.destination == 'simulator' && inputs.re-sign == 'true' && github.event_name == 'pull_request' }}
+      if: ${{ env.ARTIFACT_URL && inputs.destination == 'simulator' && inputs.re-sign == 'true' }}
       run: |
         APP_DIR=$(dirname "$ARTIFACT_TAR_PATH")
         APP_BASENAME=$(basename "$ARTIFACT_TAR_PATH")
