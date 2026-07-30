@@ -122,7 +122,7 @@ It is resolved in this order:
 ## Prerequisites
 
 - macOS runner
-- Rock CLI installed in your project
+- Rock CLI 0.15.1 or newer installed in your project
 - For device builds:
   - Valid Apple Developer certificate
   - Valid provisioning profile
